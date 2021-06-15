@@ -27,6 +27,7 @@ class Logger:
 			open(self.current_out_path + '/detections.json', 'w+').close()
 
 		def log_detection(self, detection, lightweight=True):
+			self.report(detection)
 			binary_name = detection.project.filename
 			self.log(
 				f'project: {binary_name} | '

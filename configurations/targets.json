@@ -1,6 +1,6 @@
 [
   {
-    "file_name": "samples/to-test/*",
+    "file_name": "../samples/to-test/*",
     "blacklist": [""],
     "aggressive": ["main"],
     "whitelist": ["libc_start_main", "__libc_start_main"]
