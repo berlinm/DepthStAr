@@ -13,7 +13,10 @@ class Logger:
 			out_path = path.dirname(__file__) + '/../out/'
 			previous_logs = listdir(out_path)
 			previous_logs = [log for log in previous_logs if log.isnumeric()]
-			log_index = max([int(d) for d in previous_logs]) + 1
+			if not previous_logs:
+				log_index = 0
+			else:
+				log_index = max([int(d) for d in previous_logs]) + 1
 			self.current_out_path = out_path + str(log_index)
 			mkdir(self.current_out_path)
 			self.log_file = open(self.current_out_path + '/log.txt', 'w+')
