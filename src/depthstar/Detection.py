@@ -1,5 +1,5 @@
 import angr
-from src.Logger import Logger
+from depthstar.Logger import Logger
 
 
 class Detection:

@@ -1,6 +1,6 @@
 import angr
 from threading import Event, Timer
-from src.Logger import Logger
+from depthstar.Logger import Logger
 import signal
 from time import sleep
 

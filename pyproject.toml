@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "depthstar"
+version = "0.1.0"
+description = "DepthStAr is a symbolic execution tool that is built on top of the angr framework to detect security smells in software, and specifically AACs."
+authors = [{ name = "Michael Berlin", email = "michaelberlinm@gmail.com" }]
+license = { text = "MIT" }
+dependencies = ["angr", "tqdm"]
+
+[tool.setuptools]
+license-files = ["LICENSE", "COPYING"]
+
+[project.urls]
+Homepage = "https://github.com/berlinm/DepthStAr"
+Issues = "https://github.com/berlinm/DepthStAr/issues"

@@ -1,4 +1,4 @@
-from src.Logger import Logger
+from depthstar.Logger import Logger
 from time import time
 class Statistics:
 	"""
