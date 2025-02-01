@@ -1,4 +1,8 @@
 /sample_cooking
 /sample_cooking/*
 
+
 /src/offline.py
+/src/out/*
+/src/depthstar.egg-info/*
+src/depthstar/__pycache__/*

@@ -1,27 +1,35 @@
 from json import load
-from src.Logger import Logger
+from depthstar.logger import Logger
 from os import path, listdir
+import os
 import copy
+import pkg_resources
 
+DEFAULT_CONFIGURATION_PATH = os.path.join(os.path.expanduser('~'), '.depthstar', 'config.json')
 
 class ConfigurationLoader:
 	class __ConfigurationLoader:
-		def __init__(self):
+		def __init__(self, configuration_directory=DEFAULT_CONFIGURATION_PATH):
+			self.porjects = []
 			self.logger = Logger.get_logger()
+			with open(os.path.join(configuration_directory, "edge_cases.json"), "r") as edge_case_file:
+				self.edge_cases = load(edge_case_file)
+				self.logger.log(f'Loaded edge case: {self.edge_cases}', self.__class__)
 
-			self.edge_case_file = open(path.dirname(__file__) + '/../configurations/edge_cases.json', 'r')
-			self.target_binaries_file = open(path.dirname(__file__) + '/../configurations/targets.json', 'r')
-			self.configuration_file = open(path.dirname(__file__) + '/../configurations/config.json', 'r')
+			with open(os.path.join(configuration_directory, "targets.json"), "r") as target_binaries_file:
+				self.projects = load(target_binaries_file)
+				self.parse_target_binaries()
+				self.logger.log(f'Loaded target binaries: {self.projects}', self.__class__)
 
-			self.edge_cases = load(self.edge_case_file)
-			self.logger.log(f'Loaded edge cases: {self.edge_cases}', self.__class__)
+			with open(os.path.join(configuration_directory, "config.json"), "r") as configuration_file:
+				self.configuration = load(configuration_file)
+				self.logger.log(f'Loaded configuration: {self.configuration}', self.__class__)
 
-			self.projects = load(self.target_binaries_file)
-			self.parse_target_binaries()
+			if not os.path.exists(configuration_directory):
+				self.logger.log(f'Configuration directory does not exists: {configuration_directory}')
+				return None
+			
 			self.logger.log(f'Loaded binaries: {self.projects}', self.__class__)
-
-			self.config = load(self.configuration_file)
-			self.logger.log(f'Loaded configurations: {self.projects}', self.__class__)
 
 		def close(self):
 			self.edge_case_file.close()
@@ -42,7 +50,7 @@ class ConfigurationLoader:
 						project['blacklist'].append(function_name)
 
 		def replace_to_simprocs(self, project):
-			for target_function in self.config['function_on_arguments']:
+			for target_function in self.configuration['function_on_arguments']:
 				function_to_apply_on_args = self.config['function_on_arguments'][target_function]
 				simproc_map = {sp.display_name: sp for sp in project._sim_procedures.values()}
 				if function_to_apply_on_args not in simproc_map:
@@ -55,7 +63,7 @@ class ConfigurationLoader:
 	instance = None
 
 	@staticmethod
-	def get_configuration_loader():
+	def get_configuration_loader(configuration_directory):
 		if ConfigurationLoader.instance is None:
-			ConfigurationLoader.instance = ConfigurationLoader.__ConfigurationLoader()
+			ConfigurationLoader.instance = ConfigurationLoader.__ConfigurationLoader(configuration_directory)
 		return ConfigurationLoader.instance
