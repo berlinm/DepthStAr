@@ -11,6 +11,8 @@ class Logger:
 	class __Logger:
 		def __init__(self):
 			out_path = path.dirname(__file__) + '/../out/'
+			if not path.exists(out_path):
+				mkdir(out_path)
 			previous_logs = listdir(out_path)
 			previous_logs = [log for log in previous_logs if log.isnumeric()]
 			if not previous_logs:

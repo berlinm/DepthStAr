@@ -13,6 +13,12 @@ dependencies = ["angr", "tqdm"]
 [tool.setuptools]
 license-files = ["LICENSE", "COPYING"]
 
+[tool.setuptools.packages]
+find = { where = ["src"] }
+
 [project.urls]
 Homepage = "https://github.com/berlinm/DepthStAr"
 Issues = "https://github.com/berlinm/DepthStAr/issues"
+
+[project.scripts]
+depthstar = "depthstar.depthstar:main"
