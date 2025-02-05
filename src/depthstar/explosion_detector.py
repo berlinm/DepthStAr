@@ -3,15 +3,15 @@ from threading import Event, Timer
 from depthstar.logger import Logger
 import signal
 from time import sleep
-
+from enum import Enum
 """
-An helper exploration technique to handle explosions
+A helper exploration technique to handle explosions
 during DSE.
 """
 
 
 class ExplosionDetector(angr.ExplorationTechnique):
-	logger = Logger.get_logger()
+	logger = Logger()
 
 	def __init__(self, stashes=('active', 'deferred', 'errored', 'cut'), states_threshold=100, seconds_timeout=10):
 		super(ExplosionDetector, self).__init__()
@@ -36,7 +36,7 @@ class ExplosionDetector(angr.ExplorationTechnique):
 			pass
 		signal.signal(signal.SIGALRM, self.timeout_callback)
 		signal.alarm(1)
-		self.logger.log(f'Timeout thrown | frame: {frame}', 'TIMEOUT', should_print=True)
+		self.logger.warning(f'Timeout thrown | thrown from: {frame.f_code.co_filename}:{frame.f_lineno} ({frame.f_code.co_name})', should_print=True)
 		raise TimeoutError()
 
 	def check_timeout(self, simgr, total):
@@ -58,11 +58,11 @@ class ExplosionDetector(angr.ExplorationTechnique):
 		return total
 
 	def step(self, simgr, stash='active', **kwargs):
-		self.logger.log(f'Stepping simulation manger: {simgr}', self.__class__, should_print=True)
+		self.logger.debug(message=f'Stepping simulation manger: {simgr}', should_print=True)
 		simgr = simgr.step(stash=stash, **kwargs)
 		total = self.count_states(simgr)
 		self.check_timeout(simgr, total)
 		if total >= self._threshold:
-			self.logger.log("State explosion detected, over %d states: %s" % (total, str(simgr)), self.__class__)
+			self.logger.warning(message="State explosion detected, over %d states: %s" % (total, str(simgr)))
 			self.move_all_to_drop(simgr)
 		return simgr
