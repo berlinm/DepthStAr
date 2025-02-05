@@ -1,7 +1,7 @@
 /sample_cooking
 /sample_cooking/*
 
-
+/configurations/*
 /src/offline.py
 /src/out/*
 /src/depthstar.egg-info/*

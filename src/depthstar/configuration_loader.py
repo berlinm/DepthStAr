@@ -9,9 +9,9 @@ DEFAULT_CONFIGURATION_PATH = os.path.join(os.path.expanduser('~'), '.depthstar',
 
 class ConfigurationLoader:
 	class __ConfigurationLoader:
-		def __init__(self, configuration_directory=DEFAULT_CONFIGURATION_PATH):
-			self.porjects = []
-			self.logger = Logger.get_logger()
+		def __init__(self, configuration_directory=DEFAULT_CONFIGURATION_PATH, samples_path=""):
+			self.projects = []
+			self.logger = Logger()
 			with open(os.path.join(configuration_directory, "edge_cases.json"), "r") as edge_case_file:
 				self.edge_cases = load(edge_case_file)
 				self.logger.log(f'Loaded edge case: {self.edge_cases}', self.__class__)

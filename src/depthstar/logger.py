@@ -1,117 +1,143 @@
-from datetime import datetime
-from json import dumps
-from os import path, mkdir, listdir
+import os
 import csv
-
+import json
+from datetime import datetime
+import inspect
+from enum import Enum
 
 class Logger:
-	def __init__(self):
-		pass
+    _instance = None
 
-	class __Logger:
-		def __init__(self):
-			out_path = path.dirname(__file__) + '/../out/'
-			if not path.exists(out_path):
-				mkdir(out_path)
-			previous_logs = listdir(out_path)
-			previous_logs = [log for log in previous_logs if log.isnumeric()]
-			if not previous_logs:
-				log_index = 0
-			else:
-				log_index = max([int(d) for d in previous_logs]) + 1
-			self.current_out_path = out_path + str(log_index)
-			mkdir(self.current_out_path)
-			self.log_file = open(self.current_out_path + '/log.txt', 'w+')
-			open(self.current_out_path + '/report.csv', 'w+').close()
-			self.log_file.write("\n\nNEW RUN\n-------------------------------------------------------------\n")
-			self.log_file.close()
-			self.current_logger = -1
-			self.detections = {}
-			self.report_id = 0
-			open(self.current_out_path + '/simple_detections.txt', 'w+').close()
-			open(self.current_out_path + '/detections.json', 'w+').close()
+    class LEVEL(Enum):
+        DEBUG = 0
+        INFO = 1
+        WARNING = 2
+        ERROR = 3
+        CRITICAL = 4
+        DETECTION = 5
 
-		def log_detection(self, detection, lightweight=True):
-			self.report(detection)
-			binary_name = detection.project.filename
-			self.log(
-				f'project: {binary_name} | '
-				f'state: {detection.state}'
-				+ '\n' +
-				f'source function: {detection.source_function.name} | At address: {detection.source_function.addr}'
-				+ '\n' +
-				f'target function: {detection.target_function.name} | At address: {detection.target_function.addr}'
-				+ '\n' +
-				# f'ARGUMENT (SYMBOLIC): {detection.symbolic_argument}'
-				# + '\n' +
-				f'trace data: {detection.traces}'
-				+ '\n' +
-				f'Examples: Not supported yet',
-				'DETECTION', should_print=True)
-			path_constraints = detection.state.solver.constraints
-			detections_file = open(self.current_out_path + '/detections.json', 'w+')
-			simple_detections_file = open(self.current_out_path + '/simple_detections.txt', 'a+')
-			constraints = "" # f'{str(path_constraints)} -------  SYMBOLIC ARGUMENT  ---------0 {detection.symbolic_argument}'
-			key = (binary_name, detection.target_function.name, detection.source_function.name)
-			if key not in self.detections:
-				self.detections[key] = [constraints]
-				simple_detections_file.write(dumps(list(key)))
-			else:
-				self.detections[key].append(constraints)
-			detections_file.write(
-				dumps([f'length = {len(self.detections)}', {
-					' | '.join(key): value for key, value in self.detections.items()
-				}]))
-			simple_detections_file.close()
-			detections_file.close()
+        def __str__(self):
+            return self.name
 
-		def highlight(self):
-			self.log_file.write('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
 
-		def log(self, log_text, logger="", should_print=False):
-			self.log_file = open(self.current_out_path + '/log.txt', 'a')
-			if self.current_logger != logger:
-				if logger == 'DETECTION':
-					self.highlight()
-				self.log_file.write(f'{logger}:\n')
-				self.current_logger = logger
-			logging_message = f'\n[{datetime.now()}]\t' + log_text + '\n'
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._init_logger()
+        return cls._instance
 
-			self.log_file.write(logging_message)
-			self.log_file.close()
-			#
-			# if should_print:
-			# 	print(logging_message)
+    def _init_logger(self):
+        out_path = os.path.join(os.path.dirname(__file__), "../out")
+        os.makedirs(out_path, exist_ok=True)
 
-		def report(self, detection):
-			report_line = [str(x) for x in
-			               [self.report_id,
-			                detection.project.filename,
-			                hex(detection.state.addr),
-			                detection.function_time,
-			                detection.binary_time,
-			                detection.source_function.name,
-			                detection.target_function.name
-			                ]]
-			new = True
-			with open(self.current_out_path + '/report.csv', 'a+') as report_file:
-				reader = csv.reader(report_file)
-				for row in reader:
-					if row[2] == hex(detection.state.addr) and row[5] == detection.source_function.name and row[6] == detection.target_function.name:
-						new = False
-						break
-				if new:
-					writer = csv.writer(report_file)
-					writer.writerow(report_line)
-					self.report_id += 1
+        # Determine log index
+        previous_logs = [int(d) for d in os.listdir(out_path) if d.isnumeric()]
+        log_index = max(previous_logs, default=-1) + 1
 
-		def close(self):
-			self.log_file.close()
+        # Create log directory
+        self.current_out_path = os.path.join(out_path, str(log_index))
+        os.makedirs(self.current_out_path, exist_ok=True)
 
-	instance = None
+        self.log_file_path = os.path.join(self.current_out_path, "log.txt")
+        self.report_file_path = os.path.join(self.current_out_path, "report.csv")
+        self.detections_json_path = os.path.join(self.current_out_path, "detections.json")
+        self.simple_detections_path = os.path.join(self.current_out_path, "simple_detections.txt")
 
-	@staticmethod
-	def get_logger():
-		if Logger.instance is None:
-			Logger.instance = Logger.__Logger()
-		return Logger.instance
+        # Initialize log files
+        self._initialize_log_files()
+        self.detections = {}
+        self.report_id = 0
+        self.current_source = None
+
+    def _initialize_log_files(self):
+        with open(self.log_file_path, "w") as log_file:
+            log_file.write("\n\nNEW RUN\n" + "-" * 60 + "\n")
+
+        for filepath in [self.report_file_path, self.simple_detections_path, self.detections_json_path]:
+            open(filepath, "w").close()
+
+    def detect_source_class_name(self):
+        stack = inspect.stack()
+        class_names = [frame.frame.f_locals.get("self", None).__class__.__name__ for frame in stack]
+        for class_name in class_names:
+            if class_name != self.__class__.__name__:
+                return class_name
+
+    def log(self, message, level="INFO", should_print=False):
+        timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        source = self.detect_source_class_name()
+        log_message = f"{timestamp} [{level}] {message}\n"
+
+        with open(self.log_file_path, "a") as log_file:
+            if source and source != self.current_source:
+                log_file.write(f"\n{source}:\n")
+                self.current_source = source
+            log_file.write(log_message)
+
+        if should_print:
+            print(log_message.strip())
+
+    def log_detection(self, detection):
+        """Logs detection details and updates JSON & text logs."""
+        binary_name = detection.project.filename
+        key = (binary_name, detection.target_function.name, detection.source_function.name)
+        
+        log_message = (
+            f"Project: {binary_name} | State: {detection.state}\n"
+            f"Source Function: {detection.source_function.name} @ {detection.source_function.addr}\n"
+            f"Target Function: {detection.target_function.name} @ {detection.target_function.addr}\n"
+            f"Trace Data: {detection.traces}\n"
+        )
+        self.log(log_message, level=self.LEVEL.DETECTION, should_print=True)
+
+        # Update detections
+        constraints = ""  # Placeholder for path constraints
+        if key not in self.detections:
+            self.detections[key] = [constraints]
+            with open(self.simple_detections_path, "a") as f:
+                f.write(json.dumps(list(key)) + "\n")
+        else:
+            self.detections[key].append(constraints)
+
+        with open(self.detections_json_path, "w") as f:
+            json.dump({"length": len(self.detections), "detections": self.detections}, f, indent=4)
+
+    def report(self, detection):
+        """Logs detection details into a CSV report."""
+        report_line = [
+            self.report_id,
+            detection.project.filename,
+            hex(detection.state.addr),
+            detection.function_time,
+            detection.binary_time,
+            detection.source_function.name,
+            detection.target_function.name,
+        ]
+
+        with open(self.report_file_path, "a+", newline="") as csvfile:
+            reader = csv.reader(csvfile)
+            existing_rows = list(reader)
+            
+            if not any(row and row[2] == report_line[2] and row[5] == report_line[5] and row[6] == report_line[6] for row in existing_rows):
+                writer = csv.writer(csvfile)
+                writer.writerow(report_line)
+                self.report_id += 1
+
+    def debug(self, message, should_print=False):
+        self.log(message, level=self.LEVEL.DEBUG, should_print=should_print)
+
+    def info(self, message, should_print=False):
+        self.log(message, level=self.LEVEL.INFO, should_print=should_print)
+
+    def warning(self, message, should_print=False):
+        self.log(message, level=self.LEVEL.WARNING, should_print=should_print)
+
+    def error(self, message, should_print=False):
+        self.log(message, level=self.LEVEL.ERROR, should_print=should_print)
+
+    def critical(self, message, should_print=False):
+        self.log(message, level=self.LEVEL.CRITICAL, should_print=should_print)
+
+    def detection(self, message, should_print=False):
+        self.log(message, level=self.LEVEL.DETECTION, should_print=should_print)
+
