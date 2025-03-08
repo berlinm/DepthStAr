@@ -1,8 +1,13 @@
 /sample_cooking
 /sample_cooking/*
 
+/out/
+/out/*
+
+/configurations/
 /configurations/*
+
 /src/offline.py
 /src/out/*
 /src/depthstar.egg-info/*
-src/depthstar/__pycache__/*
+/src/depthstar/__pycache__/*

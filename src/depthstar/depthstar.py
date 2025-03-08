@@ -63,8 +63,8 @@ class ACTION_ON_FUNCTION(Enum):
 
 class DepthStar:
 
-	def __init__(self, configuration_path):
-		self.logger = Logger()
+	def __init__(self, configuration_path, out_directory):
+		self.logger = Logger(out_directory)
 		self.logger.info(f'Starting analysis with configurations:' + '\n' +
 		           f'states limit: {STATES_LIMIT} time limit: {TIME_LIMIT}' + '\n' +
 		           f'aggressive state limit: {STATES_LIMIT_AGGRESSIVE} aggressive time limit: {TIME_LIMIT_AGGRESSIVE}')
@@ -83,12 +83,11 @@ class DepthStar:
 		project_map = {}
 		for name in self.projects:
 			try:
-				project_map[name] = angr.Project(name)
+				project_map[name] = angr.Project(name, auto_load_libs=False)
 			except:
 				pass
 		self.projects = project_map
 		# projects = {name: angr.Project(name) for name in projects}
-		# [init_project(project) for project in projects]
 		self.blacklists = {file_map['file_name']: file_map['blacklist'] for file_map in self.cl.projects}
 		self.whitelists = {file_map['file_name']: file_map['whitelist'] for file_map in self.cl.projects}
 		self.require_aggressive = {file_map['file_name']: file_map['aggressive'] for file_map in self.cl.projects}
@@ -99,8 +98,8 @@ class DepthStar:
 		# ---- Takes ~2 min. for each executable that is loaded ----
 		# Initializing the control flow graph, and the functions names
 
-		cfgs = {name: self.cfg_from_project(project, self.regions[name]) for name, project in self.projects.items()}
-		idfers = {name: project.analyses.Identifier(cfg=cfgs[name]) for name, project in self.projects.items()}
+		cfgs = {name: self.cfg_from_project(project) for name, project in self.projects.items()}
+		# idfers = {name: project.analyses.Identifier(cfg=cfgs[name]) for name, project in self.projects.items()}
 
 		# Building a convenient function maps by name and by address
 		self.funcmaps = {name: self.get_funcmap(project) for name, project in self.projects.items()}
@@ -113,11 +112,11 @@ class DepthStar:
 	
 
 
-	def cfg_from_project(self, project, _regions):
-		print(f"now loading {project} with regions {_regions}")
+	def cfg_from_project(self, project):
+		self.logger.debug(f"now loading {project}", should_print=True)
 		return project.analyses.CFGFast(force_complete_scan=False, data_references=False,
 		                                resolve_indirect_jumps=True, show_progressbar=True,
-		                                heuristic_plt_resolving=True, indirect_jump_target_limit=1000000, regions=_regions)
+		                                heuristic_plt_resolving=True, indirect_jump_target_limit=1000000)
 
 
 	def get_funcmap(self, project):
@@ -150,7 +149,7 @@ class DepthStar:
 		crypt_binary = crypt_binary[0] if crypt_binary else None
 		if crypt_binary is None:
 			return None
-		self.logger.debug(f'crypto binary: {crypt_binary}', "GETTING REGIONS")
+		self.logger.debug(f'Crypto binary region detected: {crypt_binary}')
 		return (
 			crypt_binary.min_addr, crypt_binary.max_addr
 		)
@@ -178,12 +177,6 @@ class DepthStar:
 		] if region]
 		self.logger.info(f'current binary: {current_file_binary}\nlibc binary: {libc_binary if libc_binary else "Not Found"}', "GETTING REGIONS")
 		return regions
-
-
-	def init_project(self, binary_name):
-		project = angr.Project(binary_name)
-		# Might be a bug in angr in this line
-		project.analyses.CompleteCallingConventions(recover_variables=True, analyze_callsites=True)
 
 
 	
@@ -330,18 +323,18 @@ class DepthStar:
 			signal.alarm(0)
 
 
-	def get_regions(self, binary_name, regions_to_get):
-		"""
-		Extracts the wanted regions given a binary name
-		:param binary_name: str                     The name of the binary
-		:param regions_to_get: List[index: int]     A list of indices to get the regions of
-		:return:
-		"""
-		current_binary_regions = self.regions[binary_name]
-		regions_to_return = []
-		for index in regions_to_get:
-			regions_to_return.append(current_binary_regions[index])
-		return regions_to_return
+	# def get_regions(self, binary_name, regions_to_get):
+	# 	"""
+	# 	Extracts the wanted regions given a binary name
+	# 	:param binary_name: str                     The name of the binary
+	# 	:param regions_to_get: List[index: int]     A list of indices to get the regions of
+	# 	:return:
+	# 	"""
+	# 	current_binary_regions = self.regions[binary_name]
+	# 	regions_to_return = []
+	# 	for index in regions_to_get:
+	# 		regions_to_return.append(current_binary_regions[index])
+	# 	return regions_to_return
 
 
 	def detect_library(self, project, addresses):
@@ -442,9 +435,9 @@ class DepthStar:
 def main():
 	parser = argparse.ArgumentParser(description=ASCII_ART_DESCRIPTION)
 	parser.add_argument("-c", "--configuration_path", type=str, help="Configuration Directory. Should contain 3 files: config.json, targets.json and edge_cases.json", required=True)
-	parser.add_argument("-o", "--out_directory", type=str, help="Output Directory. will store all the log and result files in there.", required=True)
+	parser.add_argument("-o", "--out_directory", type=str, help="Output Directory. will store all the log and result files in there.", default=os.path.join(os.path.expanduser('~'), '.depthstar', 'output'))
 	args = parser.parse_args()
-	ds = DepthStar(args.configuration_path)
+	ds = DepthStar(args.configuration_path, args.out_directory)
 	ds.run()
 	for stat in self.all_statistics.values():
 		stat.flush_history_log()

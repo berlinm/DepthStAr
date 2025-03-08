@@ -5,8 +5,7 @@ import os
 import copy
 import pkg_resources
 
-DEFAULT_CONFIGURATION_PATH = os.path.join(os.path.expanduser('~'), '.depthstar', 'config.json')
-
+DEFAULT_CONFIGURATION_PATH = os.path.join(os.path.expanduser('~'), '.depthstar', 'configurations')
 class ConfigurationLoader:
 	class __ConfigurationLoader:
 		def __init__(self, configuration_directory=DEFAULT_CONFIGURATION_PATH):

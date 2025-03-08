@@ -20,17 +20,21 @@ class Logger:
             return self.name
 
 
-    def __new__(cls, out_path=None):
+    def __new__(cls, out_directory=None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init_logger(out_path)
+            cls.is_initialized = False
+
+        if not cls.is_initialized and out_directory:
+            cls._instance._init_logger(out_directory)
+        
         return cls._instance
 
     def _init_logger(self, out_path):
         if not out_path:
-            out_path = os.path.join(os.path.dirname(__file__), "../out")
+            out_path = DEFAULT_OUTPUT_DIRECTORY
         os.makedirs(out_path, exist_ok=True)
-
+        
         # Determine log index
         previous_logs = [int(d) for d in os.listdir(out_path) if d.isnumeric()]
         log_index = max(previous_logs, default=-1) + 1
