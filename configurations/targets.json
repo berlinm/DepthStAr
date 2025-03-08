@@ -1,6 +1,6 @@
 [
   {
-    "file_name": "~/DepthStAr/samples/to-test/*",
+    "file_name": "/mnt/hgfs/vm-mount/DepthStAr/samples/to-test/*",
     "blacklist": [""],
     "aggressive": ["main"],
     "whitelist": ["libc_start_main", "__libc_start_main"]

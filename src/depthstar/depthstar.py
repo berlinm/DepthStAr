@@ -63,7 +63,7 @@ class ACTION_ON_FUNCTION(Enum):
 
 class DepthStar:
 
-	def __init__(self, configuration_path, samples_path):
+	def __init__(self, configuration_path):
 		self.logger = Logger()
 		self.logger.info(f'Starting analysis with configurations:' + '\n' +
 		           f'states limit: {STATES_LIMIT} time limit: {TIME_LIMIT}' + '\n' +
@@ -286,7 +286,7 @@ class DepthStar:
 		project = self.projects[binary_name]
 		source_function_address = source_function.addr
 		# initial_state = project.factory.call_state(source_function_address, args=[binary_name] + args)
-		initial_state = project.factory.call_state(source_function_address, args=args)
+		initial_state = project.factory.call_state(source_function_address, *args)
 		statistics = self.all_statistics[binary_name]
 		#
 		# if not calls_target_functions(source_function):
@@ -383,7 +383,7 @@ class DepthStar:
 
 		# If one of the functions that correlate to the name given are not in the range we are after, skip
 		# NOTE: This is an optimized policy that trades runtime over accuracy
-		self.logger.debug(f'now checking function {function_name}, (found on addresses {functions}), while main object range is {range(*main_object_region)}')
+		self.logger.debug(f'now checking function {function_name}, (found on addresses {functions}), while main object range is {tuple(hex(address) for address in main_object_region)}')
 		if any(
 				[(function.addr not in range(*main_object_region))
 				 for function in functions]
@@ -442,9 +442,9 @@ class DepthStar:
 def main():
 	parser = argparse.ArgumentParser(description=ASCII_ART_DESCRIPTION)
 	parser.add_argument("-c", "--configuration_path", type=str, help="Configuration Directory. Should contain 3 files: config.json, targets.json and edge_cases.json", required=True)
-	parser.add_argument("-s", "--samples_path", type=str, help="Samples Directory. Should contain binaries that will be tested", required=True)
+	parser.add_argument("-o", "--out_directory", type=str, help="Output Directory. will store all the log and result files in there.", required=True)
 	args = parser.parse_args()
-	ds = DepthStar(args.configuration_path, args.samples_path)
+	ds = DepthStar(args.configuration_path)
 	ds.run()
 	for stat in self.all_statistics.values():
 		stat.flush_history_log()

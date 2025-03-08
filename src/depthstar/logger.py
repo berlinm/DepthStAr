@@ -20,14 +20,15 @@ class Logger:
             return self.name
 
 
-    def __new__(cls):
+    def __new__(cls, out_path=None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init_logger()
+            cls._instance._init_logger(out_path)
         return cls._instance
 
-    def _init_logger(self):
-        out_path = os.path.join(os.path.dirname(__file__), "../out")
+    def _init_logger(self, out_path):
+        if not out_path:
+            out_path = os.path.join(os.path.dirname(__file__), "../out")
         os.makedirs(out_path, exist_ok=True)
 
         # Determine log index
