@@ -1,8 +1,20 @@
 [
   {
-    "file_name": "/mnt/hgfs/vm-mount/DepthStAr/samples/to-test/*",
+    "file_name": "/mnt/hgfs/vm-mount/DepthStAr/samples/to-test/ls",
     "blacklist": ["sub_406e1c", "sub_406e99"],
-    "aggressive": [],
+    "aggressiveness": {"main":5},
+    "whitelist": ["libc_start_main", "__libc_start_main"]
+  },
+  {
+    "file_name": "/mnt/hgfs/vm-mount/DepthStAr/samples/to-test/tree_bad",
+    "blacklist": [],
+    "aggressiveness": {"main":4},
+    "whitelist": ["libc_start_main", "__libc_start_main"]
+  },
+  {
+    "file_name": "/mnt/hgfs/vm-mount/DepthStAr/samples/to-test/tree_good",
+    "blacklist": [],
+    "aggressiveness": {"main":4},
     "whitelist": ["libc_start_main", "__libc_start_main"]
   }
 ]
