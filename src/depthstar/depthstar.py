@@ -12,15 +12,11 @@ from depthstar.logger import Logger
 from depthstar.statistics import Statistics
 from depthstar.configuration_loader import ConfigurationLoader
 from depthstar.detection import Detection
+from depthstar.depthstar_project import DepthStarProject
+
 
 from enum import Enum
 import math
-
-STATES_LIMIT = 100
-TIME_LIMIT = 15  # Seconds
-
-STATES_LIMIT_AGGRESSIVE = 10000
-TIME_LIMIT_AGGRESSIVE = 600  # Seconds
 
 LIBC_REGION_INDEX = 1
 MAIN_OBJECT_REGION_INDEX = 0
@@ -66,45 +62,49 @@ class DepthStar:
 
 	def __init__(self, configuration_path, out_directory):
 		self.logger = Logger(out_directory)
-		self.logger.info(f'Starting analysis with configurations:' + '\n' +
-		           f'states limit: {STATES_LIMIT} time limit: {TIME_LIMIT}' + '\n' +
-		           f'aggressive state limit: {STATES_LIMIT_AGGRESSIVE} aggressive time limit: {TIME_LIMIT_AGGRESSIVE}')
 		self.cl = ConfigurationLoader.get_configuration_loader(configuration_path)
-		self.edge_cases, self.projects, self.configurations = self.cl.edge_cases, [file_map['file_name'] for file_map in self.cl.projects], self.cl.configuration
-		self.all_statistics = {binary_name: Statistics() for binary_name in self.projects}
+		self.edge_cases, self.configurations = self.cl.edge_cases, self.cl.configuration
+
+
+		self.projects = {}
+		for file_map in self.cl.projects:
+			binary_name = file_map['file_name']
+			try:
+				# Create angr's project
+				project = DepthStarProject(binary_name, auto_load_libs=False)
+				
+				# Assign properties from config
+				project.function_aggressiveness = file_map.get("aggressiveness", {})
+				project.blacklist = file_map.get("blacklist", [])
+				project.whitelist = file_map.get("whitelist", [])
+				project.statistics = Statistics()
+
+				# Identifying regions for libc, main executable, and cryptographic libraries
+				project.regions = self.create_regions(project)
+				
+				# ---- Takes some time for each executable that is loaded ----
+				# Initializing the control flow graph, and the functions names
+				project.cfg = self.cfg_from_project(project)
+
+				# Building a convenient function maps by name and by address
+				project.funcmap = self.get_funcmap(project)
+				project.name_funcmap = self.get_name_funcmap(project.funcmap)
+				
+				self.projects[binary_name] = project
+				
+				
+				self.logger.info(f"Loaded {binary_name} into DepthStarProject")
+			
+			except Exception as e:
+				self.logger.warning(f"Failed to load binary {binary_name}: {e}")
+
+
 		# Apply configurations
 		if 'recursion_limit' in self.configurations:
 			value = self.configurations['recursion_limit']
 			self.logger.debug(f'Setting recursion limit to {value}')
 			sys.setrecursionlimit(value)
 
-		# Initializing the binaries, the whitelists and blacklists
-
-		# Doing this in the loop to catch exceptions
-		project_map = {}
-		for name in self.projects:
-			try:
-				project_map[name] = angr.Project(name, auto_load_libs=False)
-			except:
-				pass
-		self.projects = project_map
-		# projects = {name: angr.Project(name) for name in projects}
-		self.blacklists = {file_map['file_name']: file_map['blacklist'] for file_map in self.cl.projects}
-		self.whitelists = {file_map['file_name']: file_map['whitelist'] for file_map in self.cl.projects}
-		self.require_aggressive = {file_map['file_name']: file_map['aggressive'] for file_map in self.cl.projects}
-
-		# Identifying regions for libc, main executable, and cryptographic libraries
-		self.regions = {name: self.create_regions(project) for name, project in self.projects.items()}
-
-		# ---- Takes ~2 min. for each executable that is loaded ----
-		# Initializing the control flow graph, and the functions names
-
-		cfgs = {name: self.cfg_from_project(project) for name, project in self.projects.items()}
-		# idfers = {name: project.analyses.Identifier(cfg=cfgs[name]) for name, project in self.projects.items()}
-
-		# Building a convenient function maps by name and by address
-		self.funcmaps = {name: self.get_funcmap(project) for name, project in self.projects.items()}
-		self.name_funcmaps = {name: self.get_name_funcmap(self.funcmaps[name]) for name in self.projects.keys()}
 
 		if 'function_on_arguments' in self.configurations:
 			self.replacements = self.configurations['function_on_arguments']
@@ -198,16 +198,16 @@ class DepthStar:
 		:param argument_index: int          The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
-		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}', 'VERIFICATION')
-		statistics = self.all_statistics[binary_name]
+		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
+		statistics = self.projects[binary_name].statistics
 		statistics.increment_verifications()
 		project = self.projects[binary_name]
-		funcmap = self.funcmaps[binary_name]
+		funcmap = project.funcmap
 		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
 		if not target_function.prototype:
 			self.logger.critical(f"The target function of {target_function.name} doesn't have a prototype - will not be able to make any detections")
 			return
-		argument = project.factory.cc().get_args(state=state, prototype=target_function.prototype)
+		argument = project.factory.cc().get_args(state=state, prototype=target_function.prototype)[argument_index]
 		if target_function.name in self.replacements:
 			self.logger.debug(f'replacing {target_function} with a symbolic function')
 			simproc_to_apply = self.replacements[target_function.name]
@@ -224,7 +224,7 @@ class DepthStar:
 			self.logger.log_detection(detection)
 			return
 
-		self.logger.info(f'argument cannot be {vulnerable_value}, argument = {argument}')
+		self.logger.info(f'argument {argument_index} cannot be {vulnerable_value}, argument = {argument}')
 
 
 	def place_breakpoint(self, binary_name, state, target_function_name, source_function, argument_index, vulnerable_value):
@@ -239,7 +239,7 @@ class DepthStar:
 		:param argument_index: int         The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
-		name_funcmap = self.name_funcmaps[binary_name]
+		name_funcmap = self.projects[binary_name].name_funcmap
 		if target_function_name not in name_funcmap:
 			return False
 		target_functions = name_funcmap[target_function_name]
@@ -272,7 +272,7 @@ class DepthStar:
 		return False
 
 
-	def detect_from_function(self, binary_name, source_function, aggressive, args):
+	def detect_from_function(self, binary_name, source_function, args):
 		"""
 		Detects all the loaded edge cases, starting from the given source_function
 
@@ -288,7 +288,15 @@ class DepthStar:
 		source_function_address = source_function.addr
 		# initial_state = project.factory.call_state(source_function_address, args=[binary_name] + args)
 		initial_state = project.factory.call_state(source_function_address, *args)
-		statistics = self.all_statistics[binary_name]
+		statistics = self.projects[binary_name].statistics
+
+		# Get aggressiveness level for function
+		aggressiveness_level = self.configurations['default_aggressiveness_level']
+		if source_function.name in self.projects[binary_name].function_aggressiveness:
+			aggressiveness_level = self.projects[binary_name].function_aggressiveness[source_function.name]
+
+		self.logger.debug(f"Setting aggressiveness level {aggressiveness_level} for function {source_function.name}")
+
 		#
 		# if not calls_target_functions(source_function):
 		# 	return
@@ -305,10 +313,7 @@ class DepthStar:
 		sm = project.factory.simulation_manager(initial_state)
 
 		# Limiting state and time of the analysis
-		if not aggressive:
-			ed = ExplosionDetector(states_threshold=STATES_LIMIT, seconds_timeout=TIME_LIMIT)
-		else:
-			ed = ExplosionDetector(states_threshold=STATES_LIMIT_AGGRESSIVE, seconds_timeout=TIME_LIMIT_AGGRESSIVE)
+		ed = ExplosionDetector(aggressiveness_level=aggressiveness_level)
 
 		sm.use_technique(ed)
 		statistics.set_last_function_start()
@@ -363,26 +368,21 @@ class DepthStar:
 		return found_objects if found_objects else "<library not found>"
 
 
-	def find_action_for_functions(self, binary_name, function_name, main_object_region):
+	
+	def should_skip(self, binary_name, function_name, main_object_region):
 		"""
-		Finds the right action for functions (skip, check, or aggressive check)
+		Returns whether or not we should skip checking a function (i.e. beginning execution from it)
 		:param binary_name: str
 		:param function_name: str
 		:param main_object_region: Tuple(min_addr: int, max_addr: int)
 		:return: enum corresponds to the right action
 		"""
-		# There are several functions that correlate to a certain name
-		functions = []
-		functions = self.name_funcmaps[binary_name][function_name]
-
-		if function_name in self.require_aggressive[binary_name]:
-			return ACTION_ON_FUNCTION.AGGRESSIVE_EXECUTE
-		if function_name in self.blacklists[binary_name]:
+		if function_name in self.projects[binary_name].blacklist:
 			self.logger.debug(f'Skipping blacklisted functions: {function_name}', should_print=True)
-			return ACTION_ON_FUNCTION.SKIP
-
+			return True
 		# If one of the functions that correlate to the name given are not in the range we are after, skip
 		# NOTE: This is an optimized policy that trades runtime over accuracy
+		functions = self.projects[binary_name].name_funcmap.get(function_name)
 		self.logger.debug(f'now checking function {function_name}, (found on addresses {functions}), while main object range is {tuple(hex(address) for address in main_object_region)}')
 		if any(
 				[(function.addr not in range(*main_object_region))
@@ -391,8 +391,14 @@ class DepthStar:
 			self.logger.debug(
 				f'Skipping functions from {self.detect_library(self.projects[binary_name], [function.addr for function in functions])}: {function_name}',
 				should_print=True)
-			return ACTION_ON_FUNCTION.SKIP
-		return ACTION_ON_FUNCTION.EXECUTE
+			return True
+
+		if self.configurations['default_aggressiveness_level'] == 0 and function_name not in self.projects[binary_name].function_aggressiveness:
+			self.logger.info(f"Default aggressiveness level is 0 and specific function {function_name} was not overridden, skipping")
+			return True
+		# i.e. Execute!
+		return False
+		
 
 
 	def concrete_execute_function(self, binary_name, function_name):
@@ -402,10 +408,10 @@ class DepthStar:
 		:param function_name: str           The name of the function to be ran
 		:return: None
 		"""
-		if function_name not in self.name_funcmaps[binary_name]:
+		if function_name not in self.projects[binary_name].name_funcmap:
 			self.logger.debug(f'Did not find whitelisted function for concrete execution: {function_name}, skipping', should_print=True)
 			return
-		function = self.name_funcmaps[binary_name][function_name][0]
+		function = self.projects[binary_name].name_funcmap[function_name][0]
 		project = self.projects[binary_name]
 		initial_state = project.factory.call_state(function.addr)
 		sm = project.factory.simulation_manager(initial_state)
@@ -418,25 +424,24 @@ class DepthStar:
 		if extra_execution_args is None:
 			extra_execution_args = []
 		for binary_name, project in self.projects.items():
-			self.all_statistics[binary_name].new_binary()
+			self.projects[binary_name].statistics.new_binary()
 
 			self.logger.info(f'Next executing binary: {binary_name}')
 
-			main_object_region = self.regions[binary_name][MAIN_OBJECT_REGION_INDEX]
+			main_object_region = self.projects[binary_name].regions[MAIN_OBJECT_REGION_INDEX]
 
-			for function_name in self.whitelists[binary_name]:
+			for function_name in self.projects[binary_name].whitelist:
 				self.concrete_execute_function(binary_name, function_name)
 
-			for function_name, functions in tqdm(self.name_funcmaps[binary_name].items()):
-				desirable_action = self.find_action_for_functions(binary_name, function_name, main_object_region)
-				if desirable_action == ACTION_ON_FUNCTION.SKIP:
+			for function_name, functions in tqdm(self.projects[binary_name].name_funcmap.items()):
+				should_skip = self.should_skip(binary_name, function_name, main_object_region)
+				if should_skip:
 					continue
-				aggressive = desirable_action == ACTION_ON_FUNCTION.AGGRESSIVE_EXECUTE
 
 				for function in functions:
 					self.logger.info(f'Next execution function: {function.name}', should_print=True)
-					self.detect_from_function(binary_name, function, aggressive, extra_execution_args)
-			self.all_statistics[binary_name].flush_log(binary_name)
+					self.detect_from_function(binary_name, function, extra_execution_args)
+			self.projects[binary_name].statistics.flush_log(binary_name)
 
 
 def main():
@@ -446,6 +451,6 @@ def main():
 	args = parser.parse_args()
 	ds = DepthStar(args.configuration_path, args.out_directory)
 	ds.run()
-	for stat in self.all_statistics.values():
-		stat.flush_history_log()
+	for project in ds.projects.values():
+		project.statistics.flush_history_log()
 	

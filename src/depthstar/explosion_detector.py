@@ -15,20 +15,38 @@ class StepTimeoutException(Exception):
 class ExplosionDetector(angr.ExplorationTechnique):
 	logger = Logger()
 
-	def __init__(self, stashes=('active', 'deferred', 'errored', 'cut'), states_threshold=100, seconds_timeout=10):
+	def __init__(self, stashes=('active', 'deferred', 'errored', 'cut'), aggressiveness_level=1):
 		super(ExplosionDetector, self).__init__()
 		# Input
 		self._stashes = stashes	
-		self._threshold = states_threshold
-		self._timeout = seconds_timeout
-		
+		self._threshold = ExplosionDetector.get_state_limit_by_level(level=aggressiveness_level)
+		self._timeout = ExplosionDetector.get_time_limit_by_level(level=aggressiveness_level)
+
+		self.logger.info(f"Starting explosion detector with aggressiveness level {aggressiveness_level}, timeout {self._timeout}, and state threshold {self._threshold}")
+
 		# Internal use properties
 		self.timed_out = threading.Event()
 		self.max_time_limit = time.time() + self._timeout
 
-		# Timer so we know it is time between steps
-		timer = threading.Timer(self._timeout + 2, self.set_timeout)
+		# Timer so we know it is time when inside a long step
+		timer = threading.Timer(self._timeout + 1, self.set_timeout)
 		timer.start()
+
+
+	
+	@classmethod
+	def get_state_limit_by_level(cls, level):
+		"""Compute state limit dynamically based on base level"""
+		level = max(1, min(level, 5))  # Ensure level is between 1-5
+		return cls.BASE_AGGRESSIVENESS["state_limit"] * (cls.AGGRESSIVENESS_MULTIPLIER ** (level - 1))
+
+	@classmethod
+	def get_time_limit_by_level(cls, level):
+		"""Compute time limit dynamically based on base level"""
+		level = max(1, min(level, 5))  # Ensure level is between 1-5
+		return cls.BASE_AGGRESSIVENESS["time_limit"] * (cls.AGGRESSIVENESS_MULTIPLIER ** (level - 1))
+
+		
 
 	def set_timeout(self):
 		self.timed_out.set()		
