@@ -1,8 +1,8 @@
 [
   {
     "file_name": "/mnt/hgfs/vm-mount/DepthStAr/samples/to-test/*",
-    "blacklist": [""],
-    "aggressive": ["main"],
+    "blacklist": ["sub_406e1c", "sub_406e99"],
+    "aggressive": [],
     "whitelist": ["libc_start_main", "__libc_start_main"]
   }
 ]

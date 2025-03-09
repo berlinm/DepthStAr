@@ -1,17 +1,18 @@
 import os
 import sys
 import argparse
+import threading
+import traceback
 from time import time
 
 import angr
 from tqdm import tqdm
-from depthstar.explosion_detector import ExplosionDetector
+from depthstar.explosion_detector import ExplosionDetector, StepTimeoutException
 from depthstar.logger import Logger
 from depthstar.statistics import Statistics
 from depthstar.configuration_loader import ConfigurationLoader
 from depthstar.detection import Detection
 
-import signal
 from enum import Enum
 import math
 
@@ -114,9 +115,12 @@ class DepthStar:
 
 	def cfg_from_project(self, project):
 		self.logger.debug(f"now loading {project}", should_print=True)
-		return project.analyses.CFGFast(force_complete_scan=False, data_references=False,
+
+		project_cfg = project.analyses.CFGFast(force_complete_scan=False, data_references=False,
 		                                resolve_indirect_jumps=True, show_progressbar=True,
 		                                heuristic_plt_resolving=True, indirect_jump_target_limit=1000000)
+		project.analyses.CompleteCallingConventions(recover_variables=True)
+		return project_cfg
 
 
 	def get_funcmap(self, project):
@@ -199,7 +203,11 @@ class DepthStar:
 		statistics.increment_verifications()
 		project = self.projects[binary_name]
 		funcmap = self.funcmaps[binary_name]
-		argument = project.factory.cc().arg(state, argument_index)
+		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
+		if not target_function.prototype:
+			self.logger.critical(f"The target function of {target_function.name} doesn't have a prototype - will not be able to make any detections")
+			return
+		argument = project.factory.cc().get_args(state=state, prototype=target_function.prototype)
 		if target_function.name in self.replacements:
 			self.logger.debug(f'replacing {target_function} with a symbolic function')
 			simproc_to_apply = self.replacements[target_function.name]
@@ -308,19 +316,18 @@ class DepthStar:
 		try:
 			# Start exploring
 			sm.explore()
-		except TimeoutError:
-			# clean up force stopped simgr
-			ed.timed_out.set()
+		except StepTimeoutException:
+			# Clean up force stopped simgr
+			ed.set_timeout()
 			total = ed.count_states(sm)
 			self.logger.warning(f'Timeout caught | {total} states: {str(sm)}')
 			statistics.detection_times.append(math.inf)
-			ed.check_timeout(sm, total)
+			active_threads = threading.enumerate()
+			self.logger.info(f"FYI: There are currently {len(active_threads)} active (stuck) threads")
 		except Exception as e:
 			self.logger.critical(f'unexpected error {e} while analyzing source function {source_function.name}',
 			           should_print=True)
-		finally:
-			# cancel the alarm if timeout was not reached
-			signal.alarm(0)
+			self.logger.debug(f"Stack Trace: {traceback.format_exc()}")
 
 
 	# def get_regions(self, binary_name, regions_to_get):
