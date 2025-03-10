@@ -83,6 +83,7 @@ class Logger:
         if should_print:
             print(log_message.strip())
 
+
     def log_detection(self, detection):
         """Logs detection details and updates JSON & text logs."""
         binary_name = detection.project.filename
@@ -110,6 +111,7 @@ class Logger:
                 detections_data = {"length": 0, "detections": {}}
 
         # Update the detection data.
+        constraints = detection.constraints
         if json_key not in detections_data["detections"]:
             detections_data["detections"][json_key] = [constraints]
         else:

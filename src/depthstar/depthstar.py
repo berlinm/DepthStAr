@@ -178,10 +178,7 @@ class DepthStar:
 		self.logger.info(f'current binary: {current_file_binary}\nlibc binary: {libc_binary if libc_binary else "Not Found"}', "GETTING REGIONS")
 		return regions
 
-
 	
-
-
 	def verify_on_call(self, binary_name, state, source_function, target_function, vulnerable_value=0, argument_index=0):
 		"""
 		This function is called automatically by angr with the suitable arguments, every time a bp is hit.
