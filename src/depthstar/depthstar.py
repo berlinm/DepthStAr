@@ -415,24 +415,32 @@ class DepthStar:
 		if extra_execution_args is None:
 			extra_execution_args = []
 		for binary_name, project in self.projects.items():
-			self.projects[binary_name].statistics.new_binary()
+			try:
+				self.projects[binary_name].statistics.new_binary()
 
-			self.logger.info(f'Next executing binary: {binary_name}')
+				self.logger.info(f'Next executing binary: {binary_name}')
 
-			main_object_region = self.projects[binary_name].regions[MAIN_OBJECT_REGION_INDEX]
+				main_object_region = self.projects[binary_name].regions[MAIN_OBJECT_REGION_INDEX]
 
-			for function_name in self.projects[binary_name].whitelist:
-				self.concrete_execute_function(binary_name, function_name)
+				for function_name in self.projects[binary_name].whitelist:
+					self.concrete_execute_function(binary_name, function_name)
 
-			for function_name, functions in tqdm(self.projects[binary_name].name_funcmap.items()):
-				should_skip = self.should_skip(binary_name, function_name, main_object_region)
-				if should_skip:
-					continue
+				for function_name, functions in tqdm(self.projects[binary_name].name_funcmap.items()):
+					should_skip = self.should_skip(binary_name, function_name, main_object_region)
+					if should_skip:
+						continue
 
-				for function in functions:
-					self.logger.info(f'Next execution function: {function.name}', should_print=True)
-					self.detect_from_function(binary_name, function, extra_execution_args)
-			self.projects[binary_name].statistics.flush_log(binary_name)
+					for function in functions:
+						self.logger.info(f'Next execution function: {function.name}', should_print=True)
+						self.detect_from_function(binary_name, function, extra_execution_args)
+
+			except Exception as e:
+				self.logger.critical(f'unexpected error {e} while analyzing binary {binary_name}', should_print=True)
+				self.logger.debug(f"Stack Trace: {traceback.format_exc()}")
+				continue
+			finally:
+				self.projects[binary_name].statistics.flush_log(binary_name)
+
 
 
 def main():
