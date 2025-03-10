@@ -445,7 +445,7 @@ def main():
 	parser.add_argument("-o", "--out_directory", type=str, help="Output Directory. will store all the log and result files in there.", default=os.path.join(os.path.expanduser('~'), '.depthstar', 'output'))
 	
 	# Heuristic arguments
-	parser.add_argument("-d", "--dyncamic_agressiveness", type=bool, action='store_true', help="Allow dynamic aggressiveness adjustment per function. Cost function that determins the aggressiveness can be set with -s/--strategy.")
+	parser.add_argument("-d", "--dynamic_agressiveness", action='store_true', help="Allow dynamic aggressiveness adjustment per function. Cost function that determins the aggressiveness can be set with -s/--strategy.")
 	parser.add_argument("-s", "--aggressiveness_strategy", type=str, default='LEFM', help="Strategy to determine how we dynamically change aggressiveness level. Has to be used together with -d/--dynamic_agressiveness.")
 	
 	parser.add_argument("-m", "--allow_configuration_modification", type=bool, action='store_true', help="")
