@@ -57,7 +57,8 @@ class Logger:
     def _initialize_log_files(self):
         with open(self.log_file_path, "w") as log_file:
             log_file.write("\n\nNEW RUN\n" + "-" * 60 + "\n")
-
+        
+        # Make sure all the log files exist
         for filepath in [self.report_file_path, self.simple_detections_path, self.detections_json_path]:
             open(filepath, "w").close()
 
@@ -85,8 +86,8 @@ class Logger:
     def log_detection(self, detection):
         """Logs detection details and updates JSON & text logs."""
         binary_name = detection.project.filename
-        key = (binary_name, detection.target_function.name, detection.source_function.name)
         
+        # Prepare the log and write it to the standard log file
         log_message = (
             f"Project: {binary_name} | State: {detection.state}\n"
             f"Source Function: {detection.source_function.name} @ {detection.source_function.addr}\n"
@@ -95,17 +96,40 @@ class Logger:
         )
         self.log(log_message, level=self.LEVEL.DETECTION, should_print=True)
 
-        # Update detections
-        constraints = ""  # Placeholder for path constraints
-        if key not in self.detections:
-            self.detections[key] = [constraints]
-            with open(self.simple_detections_path, "a") as f:
-                f.write(json.dumps(list(key)) + "\n")
-        else:
-            self.detections[key].append(constraints)
+        key = (binary_name, detection.target_function.name, detection.source_function.name)
+        json_key = "-".join(key)
 
-        with open(self.detections_json_path, "w") as f:
-            json.dump({"length": len(self.detections), "detections": self.detections}, f, indent=4)
+        # Load the current detection file
+        if os.path.exists(self.detections_json_path):
+            try:
+                with open(self.detections_json_path, "r") as f:
+                    detections_data = json.load(f)
+            except json.JSONDecodeError:
+                detections_data = {"length": 0, "detections": {}}
+            else:
+                detections_data = {"length": 0, "detections": {}}
+
+        # Update the detection data.
+        if json_key not in detections_data["detections"]:
+            detections_data["detections"][json_key] = [constraints]
+        else:
+            detections_data["detections"][json_key].append(constraints)
+
+        detections_data["length"] = len(detections_data["detections"])
+
+        # Log the full detection json back to the file.
+        try:
+            with open(self.detections_json_path, "w") as f:
+                json.dump(detections_data, f, indent=4)
+        except IOError as e:
+            self.error(f"Failed to write detection logs: {e}", should_print=True)
+
+        # Log a minified version of the detection - only the binary, source and checked functions.
+        try:
+            with open(self.simple_detections_path, "a") as f:
+                f.write(json.dumps(json_key) + "\n")
+            except IOError as e:
+                self.error(f"Failed to write to simple detections log: {e}", should_print=True)
 
     def report(self, detection):
         """Logs detection details into a CSV report."""
