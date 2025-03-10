@@ -211,7 +211,7 @@ class DepthStar:
 			# Extract the result of the simproc
 			argument = project.factory.cc().get_return_val(state)
 		if state.solver.satisfiable(extra_constraints=[argument == vulnerable_value]):
-			self.logger.detection('Found something, simplifying and reporting')
+			self.logger.debug('Found something, simplifying and reporting')
 			statistics.increment_detections()
 			# Report a potential weakness
 			state.solver.simplify()
@@ -274,9 +274,7 @@ class DepthStar:
 
 		:param binary_name: str              The targeted binary name
 		:param source_function: Function     The function from which the execution begins
-		:param aggressive: Boolean           Whether we should dedicate extra resources (space and time) to
-											 execute this function (e.g. for main function in an executable)
-		:param args:       List[String]      Optional list of arguments passed to the program at execution
+			:param args:       List[String]      Optional list of arguments passed to the program at execution
 		:return: None
 		"""
 
@@ -442,8 +440,16 @@ class DepthStar:
 
 def main():
 	parser = argparse.ArgumentParser(description=ASCII_ART_DESCRIPTION)
+	# Path arguments
 	parser.add_argument("-c", "--configuration_path", type=str, help="Configuration Directory. Should contain 3 files: config.json, targets.json and edge_cases.json", required=True)
 	parser.add_argument("-o", "--out_directory", type=str, help="Output Directory. will store all the log and result files in there.", default=os.path.join(os.path.expanduser('~'), '.depthstar', 'output'))
+	
+	# Heuristic arguments
+	parser.add_argument("-d", "--dyncamic_agressiveness", type=bool, action='store_true', help="Allow dynamic aggressiveness adjustment per function. Cost function that determins the aggressiveness can be set with -s/--strategy.")
+	parser.add_argument("-s", "--aggressiveness_strategy", type=str, default='LEFM', help="Strategy to determine how we dynamically change aggressiveness level. Has to be used together with -d/--dynamic_agressiveness.")
+	
+	parser.add_argument("-m", "--allow_configuration_modification", type=bool, action='store_true', help="")
+	
 	args = parser.parse_args()
 	ds = DepthStar(args.configuration_path, args.out_directory)
 	ds.run()
