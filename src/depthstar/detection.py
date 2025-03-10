@@ -26,6 +26,13 @@ class Detection:
         self.binary_time = binary_time
 
         self.find_trace_data()
+        self.constraints = self._extract_constraints(state)
+
+
+    def _extract_constraints(self, state):
+        """Extracts path constraints from an angr state."""
+        return [str(c) for c in state.solver.constraints]  # Convert constraints to strings for logging
+
 
     def describe_address(self, address):
         """Returns a human-readable description of an address."""

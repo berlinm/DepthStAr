@@ -1,5 +1,10 @@
 {
  "recursion_limit": 5000,
- "function_on_arguments":
-  {}
+ "function_on_arguments":{},
+  "base_aggressiveness_level_values": {
+    "state_limit": 50,
+    "time_limit": 10
+  },
+  "aggressiveness_multiplier": 3,
+  "default_aggressiveness_level": 0
 }
