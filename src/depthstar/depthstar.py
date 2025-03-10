@@ -243,8 +243,8 @@ class DepthStar:
 		target_functions = name_funcmap[target_function_name]
 
 		# Adding a breakpoint for each target function
+		self.logger.info(f'Setting breakpoints from function {source_function.name}')
 		for target_function in target_functions:
-			self.logger.info(f'Setting breakpoint from {source_function.name} to {target_function.name}')
 			state.inspect.b('call', function_address=target_function.addr,
 			                action=lambda s, _binary_name=binary_name, _source_function=source_function,
 			                              _target_function=target_function,
