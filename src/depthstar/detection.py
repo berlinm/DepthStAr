@@ -30,8 +30,8 @@ class Detection:
 
 
     def _extract_constraints(self, state):
-    """Extracts path constraints from an angr state."""
-    	return [str(c) for c in state.solver.constraints]  # Convert constraints to strings for logging
+        """Extracts path constraints from an angr state."""
+        return [str(c) for c in state.solver.constraints]  # Convert constraints to strings for logging
 
 
     def describe_address(self, address):
