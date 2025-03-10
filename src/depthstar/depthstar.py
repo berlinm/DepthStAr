@@ -53,10 +53,6 @@ ASCII_ART_DESCRIPTION = """
 ===============================+#*@=====+%+%*===@+===+++++++++++++++********##*
 ===============================+%%@==##+==@%@===+==+++++++++++++++********#####"""
 
-class ACTION_ON_FUNCTION(Enum):
-		SKIP = 0
-		EXECUTE = 1
-		AGGRESSIVE_EXECUTE = 2
 
 class DepthStar:
 
