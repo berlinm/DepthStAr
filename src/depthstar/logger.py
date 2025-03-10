@@ -128,8 +128,8 @@ class Logger:
         try:
             with open(self.simple_detections_path, "a") as f:
                 f.write(json.dumps(json_key) + "\n")
-            except IOError as e:
-                self.error(f"Failed to write to simple detections log: {e}", should_print=True)
+        except IOError as e:
+            self.error(f"Failed to write to simple detections log: {e}", should_print=True)
 
     def report(self, detection):
         """Logs detection details into a CSV report."""
