@@ -18,6 +18,11 @@ from depthstar.depthstar_project import DepthStarProject
 from enum import Enum
 import math
 
+# For debugging a problem
+import z3
+z3.set_param('verbose', 10)
+
+
 LIBC_REGION_INDEX = 1
 MAIN_OBJECT_REGION_INDEX = 0
 CRYPT_REGION_INDEX = 2
