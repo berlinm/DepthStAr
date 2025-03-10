@@ -107,8 +107,8 @@ class Logger:
                     detections_data = json.load(f)
             except json.JSONDecodeError:
                 detections_data = {"length": 0, "detections": {}}
-            else:
-                detections_data = {"length": 0, "detections": {}}
+        else:
+            detections_data = {"length": 0, "detections": {}}
 
         # Update the detection data.
         constraints = detection.constraints
