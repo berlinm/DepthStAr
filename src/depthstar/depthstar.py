@@ -72,7 +72,7 @@ class DepthStar:
 			binary_name = file_map['file_name']
 			try:
 				# Create angr's project
-				project = DepthStarProject(binary_name, auto_load_libs=False)
+				project = DepthStarProject(binary_name, default_aggressiveness_level=self.configurations['default_aggressiveness_level'], auto_load_libs=False)
 				
 				# Assign properties from config
 				project.function_aggressiveness = file_map.get("aggressiveness", {})
