@@ -196,9 +196,10 @@ class DepthStar:
 		:param argument_index: int          The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
-		
+
+		project = self.projects[binary_name]
 		function_address = state.inspect.function_address
-		target_function = project.project.kb.functions.get(function_address, None)
+		target_function = project.kb.functions.get(function_address, None)
 		target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
 
 		if target_function_name not in [edge_case['function_name'] for edge_case in self.edge_cases]:
@@ -211,7 +212,6 @@ class DepthStar:
 		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
 		statistics = self.projects[binary_name].statistics
 		statistics.increment_verifications()
-		project = self.projects[binary_name]
 		funcmap = project.funcmap
 		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
 		if not target_function.prototype:
