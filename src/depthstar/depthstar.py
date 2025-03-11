@@ -259,7 +259,7 @@ class DepthStar:
 		state.inspect.b('call', action=lambda s, _binary_name=binary_name, _source_function=source_function,
 			                              _argument_index=argument_index,
 			                              _vulnerable_value=vulnerable_value:
-			                self.handle_function_call(_binary_name, s, _source_function, _target_function,
+			                self.handle_function_call(_binary_name, s, _source_function,
 			                               vulnerable_value=_vulnerable_value, argument_index=_argument_index))
 
 
