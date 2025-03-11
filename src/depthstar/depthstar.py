@@ -196,9 +196,10 @@ class DepthStar:
 		:param argument_index: int          The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
+		
 		function_address = state.inspect.function_address
 		target_function = project.project.kb.functions.get(function_address, None)
-    	target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
+		target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
 
 		if target_function_name not in [edge_case['function_name'] for self.edge_cases]:
 			# Target function is not one of an edge case, we can report and return.
