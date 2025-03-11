@@ -296,7 +296,7 @@ class DepthStar:
 		statistics = self.projects[binary_name].statistics
 
 		# Get aggressiveness level for function
-		function_aggressiveness = project.get_function_aggressiveness(source_function.name)
+		aggressiveness_level = project.get_function_aggressiveness(source_function.name)
 
 		self.logger.debug(f"Setting aggressiveness level {aggressiveness_level} for function {source_function.name}")
 
