@@ -52,4 +52,4 @@ class DepthStarProject(angr.Project):
         if function_name not in self.function_aggressiveness:
             self.function_aggressiveness[function_name] = self.default_aggressiveness_level
         
-        return self.function_aggressiveness.get(function_name, self.config_loader.get_base_aggressiveness())
+        return self.function_aggressiveness.get(function_name)
