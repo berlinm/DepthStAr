@@ -184,18 +184,29 @@ class DepthStar:
 		return regions
 
 	
-	def verify_on_call(self, binary_name, state, source_function, target_function, vulnerable_value=0, argument_index=0):
+	def handle_function_call(self, binary_name, state, source_function, vulnerable_value=0, argument_index=0):
 		"""
 		This function is called automatically by angr with the suitable arguments, every time a bp is hit.
+		It is responsible for tracking the functions for dynamic aggressiveness adjustment, and checking whether an AAC is detected.
 
 		:param binary_name: str             The name of the project that represents the target binary.
 		:param state: SimState              The current symbolic state which arrived a relevant call instruction
 		:param source_function: Function    The function from which the execution began
-		:param target_function: Function    The targeted function (e.g. realloc : Function)
 		:param vulnerable_value: int        The vulnerable value we try to detect (e.g. 0)
 		:param argument_index: int          The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
+		function_address = state.inspect.function_address
+		target_function = project.project.kb.functions.get(function_address, None)
+    	target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
+
+		if target_function_name not in [edge_case['function_name'] for self.edge_cases]:
+			# Target function is not one of an edge case, we can report and return.
+			self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
+			self.projects[binary_name].track_function_execution(target_function.name)
+			return
+
+		# No need to report for edge case functions, they are blacklisted anyway and no reason to ever check them
 		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
 		statistics = self.projects[binary_name].statistics
 		statistics.increment_verifications()
@@ -244,13 +255,10 @@ class DepthStar:
 
 		# Adding a breakpoint for each target function
 		self.logger.info(f'Setting breakpoints from function {source_function.name}')
-		for target_function in target_functions:
-			state.inspect.b('call', function_address=target_function.addr,
-			                action=lambda s, _binary_name=binary_name, _source_function=source_function,
-			                              _target_function=target_function,
+		state.inspect.b('call', action=lambda s, _binary_name=binary_name, _source_function=source_function,
 			                              _argument_index=argument_index,
 			                              _vulnerable_value=vulnerable_value:
-			                self.verify_on_call(_binary_name, s, _source_function, _target_function,
+			                self.handle_function_call(_binary_name, s, _source_function, _target_function,
 			                               vulnerable_value=_vulnerable_value, argument_index=_argument_index))
 
 
@@ -287,15 +295,15 @@ class DepthStar:
 		statistics = self.projects[binary_name].statistics
 
 		# Get aggressiveness level for function
-		aggressiveness_level = self.configurations['default_aggressiveness_level']
-		if source_function.name in self.projects[binary_name].function_aggressiveness:
-			aggressiveness_level = self.projects[binary_name].function_aggressiveness[source_function.name]
+		function_aggressiveness = project.get_function_aggressiveness(function_name)
 
 		self.logger.debug(f"Setting aggressiveness level {aggressiveness_level} for function {source_function.name}")
 
-		#
+		# This is a possible optimization, think it is commented out becuase it didn't work in a test but worth looking into it some time
+		
 		# if not calls_target_functions(source_function):
 		# 	return
+
 		for edge_case in self.edge_cases:
 			target_function_names = edge_case['function_name']
 			argument_index = edge_case['argument_index']
