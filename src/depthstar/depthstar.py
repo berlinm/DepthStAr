@@ -94,14 +94,14 @@ class DepthStar:
 			self.logger.warning(f"Handling function call: call address {function_address} was not found in project's knowledge base as a function.")
 			return
 		target_function = project.kb.functions.get(function_address, None)
-		target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
+		target_function_name = target_function.name if target_function
 
 		self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
 
 		if target_function_name not in [edge_case['function_name'] for edge_case in self.edge_cases]:
 			# Target function is not one of an edge case, we can report and return.
 			self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
-			project.track_function_execution(target_function.name)
+			project.track_function_execution(target_function_name)
 			return
 
 		# No need to report for edge case functions, they are blacklisted anyway and no reason to ever check them
