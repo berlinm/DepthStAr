@@ -94,7 +94,7 @@ class DepthStar:
 			self.logger.warning(f"Handling function call: call address {function_address} was not found in project's knowledge base as a function.")
 			return
 		target_function = project.kb.functions.get(function_address, None)
-		target_function_name = target_function.name if target_function
+		target_function_name = target_function.name
 
 		self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
 
