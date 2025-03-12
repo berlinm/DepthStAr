@@ -132,7 +132,7 @@ class DepthStarProject(angr.Project):
 
     def track_function_execution(self, function_name):
         """Tracks function execution dynamically and adjusts aggressiveness."""
-        if is_library_function(function_name):
+        if self.is_library_function(function_name):
             # No need to track library functions (for now, might be interesting for future research)
             return
         if function_name not in self.function_execution_count:
