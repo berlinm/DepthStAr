@@ -10,11 +10,6 @@ class DepthStarProject(angr.Project):
         # Initialize angr's project
         super().__init__(binary_name, *args, **kwargs)
         self.logger = Logger()
-        
-        self.initialize_angr_project()
-
-        
-
         self.binary_name=binary_name
 
         # Function-specific settings
@@ -33,10 +28,7 @@ class DepthStarProject(angr.Project):
 
         self.default_aggressiveness_level = default_aggressiveness_level
 
-
-        self.binary_name = binary_name
-        self.args = args  # Store extra positional args
-        self.kwargs = kwargs  # Store extra keyword args
+        self.initialize_angr_project()
 
     def initialize_angr_project(self):
         # Identifying regions for libc, main executable, and cryptographic libraries
