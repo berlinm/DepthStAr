@@ -5,7 +5,7 @@ from depthstar.statistics import *
 
 class DepthStarProject(angr.Project):
 
-    AGGRESSIVENESS_STEP_INTERVAL = 10  # Increase aggressiveness every X calls
+    self.AGGRESSIVENESS_STEP_INTERVAL = 10  # Increase aggressiveness every X calls
 
     def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, *args, **kwargs):
         # Initialize angr's project
