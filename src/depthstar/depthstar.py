@@ -319,7 +319,7 @@ class DepthStar:
 
 		for file_map in self.cl.projects:
 			binary_name = file_map['file_name']
-
+			project = None
 			# Initialize project object
 			try:
 				# Create angr's project and assign properties from config
@@ -334,6 +334,7 @@ class DepthStar:
 			
 			except Exception as e:
 				self.logger.warning(f"Failed to load binary {binary_name}: {e}")
+				continue
 			try:
 				project.statistics.new_binary()
 

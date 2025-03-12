@@ -13,7 +13,9 @@ class DepthStarProject(angr.Project):
 
         self.logger = Logger()
 
-         # Function-specific settings
+        self.binary_name=binary_name
+
+        # Function-specific settings
         self.function_aggressiveness = function_aggressiveness  # {"function_name": aggressiveness_level}
         self.blacklist = blacklist  # List of functions to skip
         self.whitelist = whitelist  # List of functions to execute concretely
