@@ -71,42 +71,19 @@ class DepthStar:
 			self.replacements = self.configurations['function_on_arguments']
 			self.logger.debug(f'replacement loaded: {self.replacements}')
 
-
-	
-	def handle_function_call(self, project, state, source_function, vulnerable_value=0, argument_index=0):
+	def verify_specific_edge_case(self, project, state, source_function, target_function, vulnerable_value, argument_index):
 		"""
-		This function is called automatically by angr with the suitable arguments, every time a bp is hit.
-		It is responsible for tracking the functions for dynamic aggressiveness adjustment, and checking whether an AAC is detected.
+		This function is responsible for the verification part upon a BP hits on every call. it must not assume that the function
+		is one of an edge case. It is responsible for checking if the function is one, and verifying if it is.
 
 		:param project: DepthstarProject    The object that extends angr's project and holds more depthstar relevant attributes
 		:param state: SimState              The current symbolic state which arrived a relevant call instruction
 		:param source_function: Function    The function from which the execution began
-		:param vulnerable_value: int        The vulnerable value we try to detect (e.g. 0)
-		:param argument_index: int          The index (from 0) of the argument we check the value in (e.g. 1)
-		:return: None
+		:param target_function: Function    The destination function of the call that was made during SE.
+		:param vulnerable_value: int       	The vulnerable value we try to detect (e.g. 0)
+		:param argument_index: int         	The index (from 0) of the argument we check the value in (e.g. 1)
+		:return: bool						Return True if a detection was found
 		"""
-
-		function_address = state.addr
-		if function_address not in project.kb.functions:
-			self.logger.warning(f"Handling function call: call address {function_address} was not found in project's knowledge base as a function.")
-			return
-		target_function = project.kb.functions.get(function_address, None)
-		target_function_name = target_function.name
-
-		if target_function_name not in [edge_case['function_name'] for edge_case in self.edge_cases]:
-			# Target function is not one of an edge case, we can report and return.
-			project.track_function_execution(target_function_name)
-			return
-
-		# No need to report for edge case functions, they are blacklisted anyway and no reason to ever check them
-		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
-		statistics = project.statistics
-		statistics.increment_verifications()
-		funcmap = project.funcmap
-		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
-		if not target_function.prototype:
-			self.logger.critical(f"The target function of {target_function.name} doesn't have a prototype - will not be able to make any detections")
-			return
 		argument = project.factory.cc().get_args(state=state, prototype=target_function.prototype)[argument_index]
 		if target_function.name in self.replacements:
 			self.logger.debug(f'replacing {target_function} with a symbolic function')
@@ -116,36 +93,111 @@ class DepthStar:
 			argument = project.factory.cc().get_return_val(state)
 		if state.solver.satisfiable(extra_constraints=[argument == vulnerable_value]):
 			self.logger.debug('Found something, simplifying and reporting')
-			statistics.increment_detections()
+			project.statistics.increment_detections()
 			# Report a potential weakness
 			state.solver.simplify()
 			detection = Detection(project, state, source_function, target_function, argument, funcmap,
-			                      time() - statistics.last_function_start_time, time() - statistics.last_binary_start_time)
+								time() - statistics.last_function_start_time, time() - statistics.last_binary_start_time)
 			self.logger.log_detection(detection)
-			return
-
+			return True
+	
 		self.logger.info(f'argument {argument_index} cannot be {vulnerable_value}, argument = {argument}')
+		return False
 
 
-	def place_breakpoint(self, project, state, source_function, argument_index, vulnerable_value):
+	def verify_on_call(self, project, state, source_function, target_function):
+		"""
+		This function is responsible for the verification part upon a BP hits on every call. it must not assume that the function
+		is one of an edge case. It is responsible for checking if the function is one, and verifying if it is.
+
+		:param project: DepthstarProject    The object that extends angr's project and holds more depthstar relevant attributes
+		:param state: SimState              The current symbolic state which arrived a relevant call instruction
+		:param source_function: Function    The function from which the execution began
+		:param target_function: Function    The destination function of the call that was made during SE.
+		:return: bool						Return True if a verification was made (i.e. the function that was called is one of an edge case)
+		"""
+		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
+		statistics = project.statistics
+		statistics.increment_verifications()
+		funcmap = project.funcmap
+		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
+		if not target_function.prototype:
+			self.logger.critical(f"The target function of {target_function.name} doesn't have a prototype - will not be able to make any detections")
+			return False
+
+		for edge_case in self.edge_cases:
+			edge_cases_function_names = edge_case['function_name']
+			argument_index = edge_case['argument_index']
+			vulnerable_value = edge_case['vulnerable_value']
+			for edge_case_function_name in edge_cases_function_names:
+				edge_case_function_objects = project.name_funcmap.get(edge_case_function_name, None)
+				if not edge_case_function_objects:
+					# The edge case wasn't found at all in the project
+					continue
+				for edge_case_function_object in edge_case_function_objects:
+					if target_function.addr != edge_case_function_object.addr:
+						# This is not the right function, skip
+						continue
+					else:
+						# The target function matches one of an edge case - verify
+						self.verify_specific_edge_case(project, state, source_function, target_function, vulnerable_value, argument_index)
+						# Regardless of whether we had a detection, return true for a verification
+						return True
+		# No verifications were made
+		return False
+
+
+				
+
+
+		
+
+
+	
+	def handle_function_call(self, project, state, source_function):
+		"""
+		This function is called automatically by angr with the suitable arguments, every time a bp is hit.
+		It is responsible for tracking the functions for dynamic aggressiveness adjustment, and checking whether an AAC is detected.
+
+		:param project: DepthstarProject    The object that extends angr's project and holds more depthstar relevant attributes
+		:param state: SimState              The current symbolic state which arrived a relevant call instruction
+		:param source_function: Function    The function from which the execution began
+		:return: None
+		"""
+		# Verify input
+		function_address = state.addr
+		if function_address not in project.kb.functions:
+			self.logger.warning(f"Handling function call: call address {function_address} was not found in project's knowledge base as a function.")
+			return
+		target_function = project.kb.functions.get(function_address, None)
+		target_function_name = target_function.name
+
+		# First verify, if function was veirifed (means one of an edge case), return. Else, track.
+		did_verifications = self.verify_on_call(project, state, source_function, target_function)
+		if did_verifications:
+			return
+		
+		# Target function is not one of an edge case, track it.
+		project.track_function_execution(target_function_name)
+		return
+
+		# No need to report for edge case functions, they are blacklisted anyway and no reason to ever check them
+		
+
+	def place_breakpoint(self, project, state, source_function):
 		"""
 		Placing a breakpoint for each function that corresponds to the given name target_function_name
 
 		:param project: DepthstarProject    The object that extends angr's project and holds more depthstar relevant attributes
 		:param state: SimState             The initial state to place breakpoint on
 		:param source_function: Function   The function from which the execution began
-		:param vulnerable_value: int       The vulnerable value we try to detect (e.g. 0)
-		:param argument_index: int         The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
 		name_funcmap = project.name_funcmap
 		# Adding a breakpoint for each target function
 		self.logger.info(f'Setting breakpoints from function {source_function.name}')
-		state.inspect.b('call', action=lambda s, _project=project, _source_function=source_function,
-			                              _argument_index=argument_index,
-			                              _vulnerable_value=vulnerable_value:
-			                self.handle_function_call(_project, s, _source_function,
-			                               vulnerable_value=_vulnerable_value, argument_index=_argument_index))
+		state.inspect.b('call', action=lambda s, _project=project, _source_function=source_function:
+			                self.handle_function_call(_project, s, _source_function))
 
 
 	def calls_target_functions(self, source_function):
@@ -184,16 +236,10 @@ class DepthStar:
 		self.logger.debug(f"Setting aggressiveness level {aggressiveness_level} for function {source_function.name}")
 
 		# This is a possible optimization, think it is commented out becuase it didn't work in a test but worth looking into it some time
-		
 		# if not calls_target_functions(source_function):
 		# 	return
 
-		target_function_names = edge_case['function_name']
-		argument_index = edge_case['argument_index']
-		vulnerable_value = edge_case['vulnerable_value']
-
-		self.place_breakpoint(project, initial_state, source_function, argument_index,
-								vulnerable_value)
+		self.place_breakpoint(project, initial_state, source_function)
 
 		# Creating simulation manager with the initialized state
 		sm = project.factory.simulation_manager(initial_state)
@@ -352,6 +398,7 @@ class DepthStar:
 				continue
 			finally:
 				project.statistics.flush_log(binary_name)
+				project.statistics.flush_history_log()
 
 
 
@@ -373,7 +420,5 @@ def main():
 	
 	args = parser.parse_args()
 	ds = DepthStar(args)
-	ds.run()
-	for project in ds.projects.values():
-		project.statistics.flush_history_log()
+	ds.run()		
 	
