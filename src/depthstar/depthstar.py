@@ -127,23 +127,18 @@ class DepthStar:
 		self.logger.info(f'argument {argument_index} cannot be {vulnerable_value}, argument = {argument}')
 
 
-	def place_breakpoint(self, project, state, target_function_name, source_function, argument_index, vulnerable_value):
+	def place_breakpoint(self, project, state, source_function, argument_index, vulnerable_value):
 		"""
 		Placing a breakpoint for each function that corresponds to the given name target_function_name
 
 		:param project: DepthstarProject    The object that extends angr's project and holds more depthstar relevant attributes
 		:param state: SimState             The initial state to place breakpoint on
-		:param target_function_name: str   The targeted function name (e.g. realloc : str)
 		:param source_function: Function   The function from which the execution began
 		:param vulnerable_value: int       The vulnerable value we try to detect (e.g. 0)
 		:param argument_index: int         The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: None
 		"""
 		name_funcmap = project.name_funcmap
-		if target_function_name not in name_funcmap:
-			return False
-		target_functions = name_funcmap[target_function_name]
-
 		# Adding a breakpoint for each target function
 		self.logger.info(f'Setting breakpoints from function {source_function.name}')
 		state.inspect.b('call', action=lambda s, _project=project, _source_function=source_function,
@@ -193,14 +188,12 @@ class DepthStar:
 		# if not calls_target_functions(source_function):
 		# 	return
 
-		for edge_case in self.edge_cases:
-			target_function_names = edge_case['function_name']
-			argument_index = edge_case['argument_index']
-			vulnerable_value = edge_case['vulnerable_value']
+		target_function_names = edge_case['function_name']
+		argument_index = edge_case['argument_index']
+		vulnerable_value = edge_case['vulnerable_value']
 
-			for target_function_name in target_function_names:
-				self.place_breakpoint(project, initial_state, target_function_name, source_function, argument_index,
-				                 vulnerable_value)
+		self.place_breakpoint(project, initial_state, source_function, argument_index,
+								vulnerable_value)
 
 		# Creating simulation manager with the initialized state
 		sm = project.factory.simulation_manager(initial_state)
