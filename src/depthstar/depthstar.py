@@ -333,7 +333,10 @@ class DepthStar:
 				self.logger.info(f"Loaded {binary_name} into DepthStarProject")
 			
 			except Exception as e:
-				self.logger.warning(f"Failed to load binary {binary_name}: {e}")
+				self.logger.error(f"Failed to load binary {binary_name}: {e}")
+				self.logger.debug(f"Stack Trace: {traceback.format_exc()}")
+				
+				
 				continue
 			try:
 				project.statistics.new_binary()
