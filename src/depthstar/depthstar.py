@@ -283,10 +283,7 @@ class DepthStar:
 		# NOTE: This is an optimized policy that trades runtime over accuracy
 		functions = project.name_funcmap.get(function_name)
 		self.logger.debug(f'now checking function {function_name}, (found on addresses {functions}), while main object range is {tuple(hex(address) for address in main_object_region)}')
-		if any(
-				[(function.addr not in range(*main_object_region))
-				 for function in functions]
-		):
+		if project.is_library_function(function, main_object_region):
 			self.logger.debug(
 				f'Skipping functions from {self.detect_library(project, [function.addr for function in functions])}: {function_name}',
 				should_print=True)

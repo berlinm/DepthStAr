@@ -5,7 +5,7 @@ from depthstar.statistics import *
 
 class DepthStarProject(angr.Project):
 
-    self.AGGRESSIVENESS_STEP_INTERVAL = 10  # Increase aggressiveness every X calls
+    self.AGGRESSIVENESS_STEP_INTERVAL = 100  # Increase aggressiveness every X calls
 
     def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, *args, **kwargs):
         # Initialize angr's project
@@ -113,7 +113,12 @@ class DepthStarProject(angr.Project):
         self.logger.info(f'current binary: {current_file_binary}\nlibc binary: {libc_binary if libc_binary else "Not Found"}', "GETTING REGIONS")
         return regions
 
-
+    def is_library_function(self, function, main_object_region):
+        functions = self.name_funcmap.get(function_name)
+        return any(
+				[(function.addr not in range(*main_object_region))
+				 for function in functions]
+		)
 
 
     def is_function_blacklisted(self, function_name):
