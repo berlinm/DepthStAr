@@ -113,7 +113,8 @@ class DepthStarProject(angr.Project):
         self.logger.info(f'current binary: {current_file_binary}\nlibc binary: {libc_binary if libc_binary else "Not Found"}', "GETTING REGIONS")
         return regions
 
-    def is_library_function(self, function, main_object_region):
+    def is_library_function(self, function_name):
+        main_object_region = self.regions[MAIN_OBJECT_REGION_INDEX]
         functions = self.name_funcmap.get(function_name)
         return any(
 				[(function.addr not in range(*main_object_region))
@@ -131,6 +132,9 @@ class DepthStarProject(angr.Project):
 
     def track_function_execution(self, function_name):
         """Tracks function execution dynamically and adjusts aggressiveness."""
+        if is_library_function(function_name):
+            # No need to track library functions (for now, might be interesting for future research)
+            return
         if function_name not in self.function_execution_count:
             self.function_execution_count[function_name] = 0
         

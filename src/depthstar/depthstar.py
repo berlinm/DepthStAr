@@ -13,14 +13,11 @@ from depthstar.statistics import Statistics
 from depthstar.configuration_loader import ConfigurationLoader
 from depthstar.detection import Detection
 from depthstar.depthstar_project import DepthStarProject
+from depthstar.constants import *
 
 
 from enum import Enum
 import math
-
-LIBC_REGION_INDEX = 1
-MAIN_OBJECT_REGION_INDEX = 0
-CRYPT_REGION_INDEX = 2
 
 ASCII_ART_DESCRIPTION = """
 -------------------------------------------------------========================
@@ -96,11 +93,8 @@ class DepthStar:
 		target_function = project.kb.functions.get(function_address, None)
 		target_function_name = target_function.name
 
-		self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
-
 		if target_function_name not in [edge_case['function_name'] for edge_case in self.edge_cases]:
 			# Target function is not one of an edge case, we can report and return.
-			self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
 			project.track_function_execution(target_function_name)
 			return
 
@@ -283,7 +277,7 @@ class DepthStar:
 		# NOTE: This is an optimized policy that trades runtime over accuracy
 		functions = project.name_funcmap.get(function_name)
 		self.logger.debug(f'now checking function {function_name}, (found on addresses {functions}), while main object range is {tuple(hex(address) for address in main_object_region)}')
-		if project.is_library_function(function, main_object_region):
+		if project.is_library_function(function_name):
 			self.logger.debug(
 				f'Skipping functions from {self.detect_library(project, [function.addr for function in functions])}: {function_name}',
 				should_print=True)
