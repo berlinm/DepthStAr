@@ -377,9 +377,6 @@ def main():
 	# Debug Z3
 	parser.add_argument("-z", "--debug_z3", action='store_true', help="Use this flag to create another log file that will contain reproducable information about Z3. Mainly should used for debugging purposes if depthstar crashed.")
 
-	import z3
-	z3.set_param('verbose', 10)
-
 	
 	args = parser.parse_args()
 	ds = DepthStar(args)
