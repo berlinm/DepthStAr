@@ -33,7 +33,6 @@ class DepthStarProject(angr.Project):
 
 
         self.binary_name = binary_name
-        self.project = None  # Will be initialized later
         self.args = args  # Store extra positional args
         self.kwargs = kwargs  # Store extra keyword args
 
@@ -46,13 +45,13 @@ class DepthStarProject(angr.Project):
         self.cfg = self.create_cfg()
 
         # Building a convenient function maps by name and by address
-        self.funcmap = self.get_funcmap(self.project)
+        self.funcmap = self.get_funcmap()
         self.name_funcmap = self.get_name_funcmap(self.funcmap)
 
     
     
-    def get_funcmap(self, project):
-        funcmap = {address: function_object for address, function_object in project.kb.functions.items()}
+    def get_funcmap(self):
+        funcmap = {address: function_object for address, function_object in self.kb.functions.items()}
         return funcmap
     
     
@@ -70,13 +69,12 @@ class DepthStarProject(angr.Project):
                 name_funcmap[func.name] = [func]
         return name_funcmap
 
-    def create_crypt_region(self, project):
+    def create_crypt_region(self):
         """
         Identifies and returns the regions in file that corresponds to a cryptographic library
-        :param project: Project                                The project object
         :return: region: Tuple[min_addr: int, max_addr: int]
         """
-        crypt_binary = [obj for obj in project.loader.all_elf_objects if 'crypt' in obj.binary_basename.lower()]
+        crypt_binary = [obj for obj in self.loader.all_elf_objects if 'crypt' in obj.binary_basename.lower()]
         crypt_binary = crypt_binary[0] if crypt_binary else None
         if crypt_binary is None:
             return None
@@ -84,13 +82,13 @@ class DepthStarProject(angr.Project):
         return (crypt_binary.min_addr, crypt_binary.max_addr)
 
 
-    def create_cfg(self, project):
-        self.logger.debug(f"now loading {project}", should_print=True)
+    def create_cfg(self):
+        self.logger.debug(f"now loading {self.binary_name}", should_print=True)
 
-        project_cfg = project.analyses.CFGFast(force_complete_scan=False, data_references=False,
+        project_cfg = self.analyses.CFGFast(force_complete_scan=False, data_references=False,
                                         resolve_indirect_jumps=True, show_progressbar=True,
                                         heuristic_plt_resolving=True, indirect_jump_target_limit=1000000)
-        project.analyses.CompleteCallingConventions(recover_variables=True)
+        self.analyses.CompleteCallingConventions(recover_variables=True)
         return project_cfg
 
 
@@ -102,8 +100,8 @@ class DepthStarProject(angr.Project):
         :param project: Project                                The project object
         :return: regions: List[Tuple(min_addr: int, max_addr: int)]
         """
-        current_file_binary = self.project.loader.all_objects[0]
-        libc_binary = [obj for obj in self.project.loader.all_elf_objects if 'libc-' in obj.binary_basename]
+        current_file_binary = self.loader.all_objects[0]
+        libc_binary = [obj for obj in self.loader.all_elf_objects if 'libc-' in obj.binary_basename]
         if libc_binary:
             libc_binary = libc_binary[0]
             libc_regions = (libc_binary.min_addr, libc_binary.max_addr)
@@ -112,7 +110,7 @@ class DepthStarProject(angr.Project):
         regions = [region for region in [
             (current_file_binary.min_addr, current_file_binary.max_addr),
             libc_regions,
-            self.create_crypt_region(self.project)
+            self.create_crypt_region()
         ] if region]
         self.logger.info(f'current binary: {current_file_binary}\nlibc binary: {libc_binary if libc_binary else "Not Found"}', "GETTING REGIONS")
         return regions
