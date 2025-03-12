@@ -137,7 +137,7 @@ class DepthStarProject(angr.Project):
         self.logger.debug(f"Tracking an execution of {function_name}. Total executions: {self.function_execution_count[function_name]}")
 
         # Increase aggressiveness every 10 calls, up to level MAX_AGGRESSIVENESS_LEVEL
-        if self.function_execution_count[function_name] % AGGRESSIVENESS_STEP_INTERVAL == 0:
+        if self.function_execution_count[function_name] % self.AGGRESSIVENESS_STEP_INTERVAL == 0:
             self.function_aggressiveness[function_name] = min(MAX_AGGRESSIVENESS_LEVEL, self.function_aggressiveness[function_name] + 1)
             self.logger.info(f"Updated aggressiveness level for {function_name}: {self.function_aggressiveness[function_name]}")
 
