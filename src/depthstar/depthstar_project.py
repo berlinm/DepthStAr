@@ -39,14 +39,14 @@ class DepthStarProject(angr.Project):
 
     def initialize_angr_project(self):
         # Identifying regions for libc, main executable, and cryptographic libraries
-        self.regions = self.create_regions(self)
+        self.regions = self.create_regions()
         
         # ---- Takes some time for each executable that is loaded ----
         # Initializing the control flow graph, and the functions names
-        self.cfg = self.create_cfg(self)
+        self.cfg = self.create_cfg()
 
         # Building a convenient function maps by name and by address
-        self.funcmap = self.get_funcmap(self, self.project)
+        self.funcmap = self.get_funcmap(self.project)
         self.name_funcmap = self.get_name_funcmap(self.funcmap)
 
     
