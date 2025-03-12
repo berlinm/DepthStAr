@@ -19,6 +19,7 @@ class DepthStarProject(angr.Project):
         self.function_aggressiveness = function_aggressiveness  # {"function_name": aggressiveness_level}
         self.blacklist = blacklist  # List of functions to skip
         self.whitelist = whitelist  # List of functions to execute concretely
+        self.function_execution_count = {}
         
         # Control Flow Graph & Function Mapping
         self.cfg = None  # CFG object
@@ -125,7 +126,6 @@ class DepthStarProject(angr.Project):
 
     def track_function_execution(self, function_name):
         """Tracks function execution dynamically and adjusts aggressiveness."""
-        self.logger.debug(f"Tracking an execution of {function_name}. Total executions: {self.function_execution_count[function_name]}")
         if function_name not in self.function_execution_count:
             self.function_execution_count[function_name] = 0
         
@@ -133,6 +133,8 @@ class DepthStarProject(angr.Project):
             self.function_aggressiveness[function_name] = self.default_aggressiveness_level
 
         self.function_execution_count[function_name] += 1
+
+        self.logger.debug(f"Tracking an execution of {function_name}. Total executions: {self.function_execution_count[function_name]}")
 
         # Increase aggressiveness every 10 calls, up to level MAX_AGGRESSIVENESS_LEVEL
         if self.function_execution_count[function_name] % AGGRESSIVENESS_STEP_INTERVAL == 0:
