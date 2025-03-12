@@ -50,8 +50,8 @@ class DepthStarProject(angr.Project):
     
     
     def get_funcmap(self, project):
-		funcmap = {address: function_object for address, function_object in project.kb.functions.items()}
-		return funcmap
+        funcmap = {address: function_object for address, function_object in project.kb.functions.items()}
+        return funcmap
 
 
 	def get_name_funcmap(self, funcmap):
