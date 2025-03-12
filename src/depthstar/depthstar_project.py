@@ -1,6 +1,7 @@
 import angr
 from depthstar.constants import *
 from depthstar.logger import *
+from depthstar.statistics import *
 
 class DepthStarProject(angr.Project):
 
@@ -11,6 +12,8 @@ class DepthStarProject(angr.Project):
         super().__init__(binary_name, *args, **kwargs)
         self.logger = Logger()
         self.binary_name=binary_name
+        self.statistics = Statistics()
+
 
         # Function-specific settings
         self.function_aggressiveness = function_aggressiveness  # {"function_name": aggressiveness_level}
