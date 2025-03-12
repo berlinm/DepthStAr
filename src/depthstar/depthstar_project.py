@@ -9,9 +9,11 @@ class DepthStarProject(angr.Project):
     def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, *args, **kwargs):
         # Initialize angr's project
         super().__init__(binary_name, *args, **kwargs)
+        self.logger = Logger()
+        
         self.initialize_angr_project()
 
-        self.logger = Logger()
+        
 
         self.binary_name=binary_name
 
