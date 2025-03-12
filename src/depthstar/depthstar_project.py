@@ -8,7 +8,7 @@ class DepthStarProject(angr.Project):
 
     def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, *args, **kwargs):
         # Initialize angr's project
-        super().__init__(self.binary_name, *self.args, **self.kwargs)
+        super().__init__(binary_name, *self.args, **self.kwargs)
         initialize_angr_project(self)
 
         self.logger = Logger()
