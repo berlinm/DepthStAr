@@ -6,7 +6,7 @@ class DepthStarProject(angr.Project):
 
     AGGRESSIVENESS_STEP_INTERVAL = 10  # Increase aggressiveness every X calls
 
-    def __init__(self, binary_name, default_aggressiveness_level, , *args, **kwargs):
+    def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, *args, **kwargs):
         # Initialize angr's project
         super().__init__(self.binary_name, *self.args, **self.kwargs)
         initialize_angr_project(self)
@@ -14,9 +14,9 @@ class DepthStarProject(angr.Project):
         self.logger = Logger()
 
          # Function-specific settings
-        self.function_aggressiveness = {}  # {"function_name": aggressiveness_level}
-        self.blacklist = []  # List of functions to skip
-        self.whitelist = []  # List of functions to execute concretely
+        self.function_aggressiveness = function_aggressiveness  # {"function_name": aggressiveness_level}
+        self.blacklist = blacklist  # List of functions to skip
+        self.whitelist = whitelist  # List of functions to execute concretely
         
         # Control Flow Graph & Function Mapping
         self.cfg = None  # CFG object
