@@ -89,7 +89,10 @@ class DepthStar:
 		:return: None
 		"""
 
-		function_address = state.inspect.function_address
+		function_address = state.addr
+		if function_address not in project.kb.functions:
+			self.logger.warning(f"Handling function call: call address {function_address} was not found in project's knowledge base as a function.")
+			return
 		target_function = project.kb.functions.get(function_address, None)
 		target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
 
