@@ -325,9 +325,9 @@ class DepthStar:
 				# Create angr's project and assign properties from config
 				project = DepthStarProject(binary_name=binary_name, 
 										   default_aggressiveness_level=self.configurations['default_aggressiveness_level'],
-										   function_aggressiveness=file_map.get("aggressiveness", {})
-										   blacklist=file_map.get("blacklist", [])
-										   whitelist=file_map.get("whitelist", []) 
+										   function_aggressiveness=file_map.get("aggressiveness", {}),
+										   blacklist=file_map.get("blacklist", []),
+										   whitelist=file_map.get("whitelist", []),
 										   auto_load_libs=False)
 				
 				self.logger.info(f"Loaded {binary_name} into DepthStarProject")
