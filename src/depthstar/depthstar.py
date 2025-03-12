@@ -181,7 +181,7 @@ class DepthStar:
 		"""
 
 		# initial_state = project.factory.call_state(source_function_address, args=[binary_name] + args)
-		initial_state = project.factory.call_state(source_function_address, *args)
+		initial_state = project.factory.call_state(source_function.address, *args)
 		statistics = project.statistics
 
 		# Get aggressiveness level for function
