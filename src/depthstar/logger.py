@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import inspect
 from enum import Enum
+import z3
 
 class Logger:
     _instance = None
@@ -20,17 +21,17 @@ class Logger:
             return self.name
 
 
-    def __new__(cls, out_directory=None):
+    def __new__(cls, out_directory=None, debug_z3=False):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls.is_initialized = False
 
         if not cls.is_initialized and out_directory:
-            cls._instance._init_logger(out_directory)
+            cls._instance._init_logger(out_directory, debug_z3)
         
         return cls._instance
 
-    def _init_logger(self, out_path):
+    def _init_logger(self, out_path, debug_z3):
         if not out_path:
             out_path = DEFAULT_OUTPUT_DIRECTORY
         os.makedirs(out_path, exist_ok=True)
@@ -42,6 +43,12 @@ class Logger:
         # Create log directory
         self.current_out_path = os.path.join(out_path, str(log_index))
         os.makedirs(self.current_out_path, exist_ok=True)
+
+        
+        if debug_z3:
+            self.z3_debug_file = os.path.join(self.current_out_path, "z3.log")
+            z3.Z3_open_log("z3.log")
+            z3.set_param('verbose', 10)
 
         self.log_file_path = os.path.join(self.current_out_path, "log.txt")
         self.report_file_path = os.path.join(self.current_out_path, "report.csv")
