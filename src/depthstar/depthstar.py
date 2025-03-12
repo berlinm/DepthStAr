@@ -93,6 +93,8 @@ class DepthStar:
 		target_function = project.kb.functions.get(function_address, None)
 		target_function_name = function_obj.name if function_obj else f"sub_{hex(function_address)}"
 
+		self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
+
 		if target_function_name not in [edge_case['function_name'] for edge_case in self.edge_cases]:
 			# Target function is not one of an edge case, we can report and return.
 			self.logger.debug(f"Tracking call to {target_function_name} from {source_function.name}")
@@ -147,10 +149,10 @@ class DepthStar:
 
 		# Adding a breakpoint for each target function
 		self.logger.info(f'Setting breakpoints from function {source_function.name}')
-		state.inspect.b('call', action=lambda s, _binary_name=project.binary_name, _source_function=source_function,
+		state.inspect.b('call', action=lambda s, _project=project, _source_function=source_function,
 			                              _argument_index=argument_index,
 			                              _vulnerable_value=vulnerable_value:
-			                self.handle_function_call(_binary_name, s, _source_function,
+			                self.handle_function_call(_project, s, _source_function,
 			                               vulnerable_value=_vulnerable_value, argument_index=_argument_index))
 
 
