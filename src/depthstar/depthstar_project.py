@@ -2,12 +2,11 @@ import angr
 from depthstar.constants import *
 from depthstar.logger import *
 from depthstar.statistics import *
+from depthstar.strategy import *
 
 class DepthStarProject(angr.Project):
 
-    AGGRESSIVENESS_STEP_INTERVAL = 100  # Increase aggressiveness every X calls
-
-    def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, *args, **kwargs):
+    def __init__(self, binary_name, default_aggressiveness_level, function_aggressiveness, blacklist, whitelist, strategy="MEFM", *args, **kwargs):
         # Initialize angr's project
         super().__init__(binary_name, *args, **kwargs)
         self.logger = Logger()
@@ -20,6 +19,8 @@ class DepthStarProject(angr.Project):
         self.blacklist = blacklist  # List of functions to skip
         self.whitelist = whitelist  # List of functions to execute concretely
         self.function_execution_count = {}
+
+        self.strategy = Strategy(strategy, self.function_aggressiveness)
         
         # Control Flow Graph & Function Mapping
         self.cfg = None  # CFG object
@@ -145,15 +146,10 @@ class DepthStarProject(angr.Project):
 
         self.logger.debug(f"Tracking an execution of {function_name}. Total executions: {self.function_execution_count[function_name]}")
 
-        # Increase aggressiveness every 10 calls, up to level MAX_AGGRESSIVENESS_LEVEL
-        if self.function_execution_count[function_name] % self.AGGRESSIVENESS_STEP_INTERVAL == 0:
-            self.function_aggressiveness[function_name] = min(MAX_AGGRESSIVENESS_LEVEL, self.function_aggressiveness[function_name] + 1)
-            self.logger.info(f"Updated aggressiveness level for {function_name}: {self.function_aggressiveness[function_name]}")
 
     def get_function_aggressiveness(self, function_name):
         """Returns the dynamically adjusted aggressiveness level for a function."""
         # If function does not exist, create with default value
         if function_name not in self.function_aggressiveness:
             self.function_aggressiveness[function_name] = self.default_aggressiveness_level
-        
-        return self.function_aggressiveness.get(function_name)
+        return self.strategy.get_function_score(self.function_execution_count, function_name)

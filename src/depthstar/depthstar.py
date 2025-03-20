@@ -84,7 +84,15 @@ class DepthStar:
 		:param argument_index: int         	The index (from 0) of the argument we check the value in (e.g. 1)
 		:return: bool						Return True if a detection was found
 		"""
+		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
+		if not target_function.prototype:
+			self.logger.critical(f"The target function of {target_function.name} doesn't have a prototype - will not be able to make any detections")
+			return False
+
 		argument = project.factory.cc().get_args(state=state, prototype=target_function.prototype)[argument_index]
+		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
+		statistics = project.statistics
+		statistics.increment_verifications()
 		if target_function.name in self.replacements:
 			self.logger.debug(f'replacing {target_function} with a symbolic function')
 			simproc_to_apply = self.replacements[target_function.name]
@@ -116,15 +124,7 @@ class DepthStar:
 		:param target_function: Function    The destination function of the call that was made during SE.
 		:return: bool						Return True if a verification was made (i.e. the function that was called is one of an edge case)
 		"""
-		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
-		statistics = project.statistics
-		statistics.increment_verifications()
 		funcmap = project.funcmap
-		# The prototype should be there because we executed project.analyses.CompleteCallingConventions
-		if not target_function.prototype:
-			self.logger.critical(f"The target function of {target_function.name} doesn't have a prototype - will not be able to make any detections")
-			return False
-
 		for edge_case in self.edge_cases:
 			edge_cases_function_names = edge_case['function_name']
 			argument_index = edge_case['argument_index']
