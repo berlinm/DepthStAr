@@ -20,7 +20,7 @@ class DepthStarProject(angr.Project):
         self.whitelist = whitelist  # List of functions to execute concretely
         self.function_execution_count = {}
 
-        self.strategy = Strategy(strategy, self.function_aggressiveness)
+        self.strategy = StrategyFactory.bake_strategy(strategy, exceptions=function_aggressiveness)
         
         # Control Flow Graph & Function Mapping
         self.cfg = None  # CFG object

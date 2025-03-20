@@ -6,14 +6,14 @@ class StrategyFactory:
     """Factory for creating function prioritization strategies based on user input."""
     
     @staticmethod
-    def bake_strategy(strategy_name):
+    def bake_strategy(strategy_name, exceptions={}):
         """Creates a strategy instance based on the provided name."""
         strategies = {
             "LEFM": LeastExploredFromMain,
             "MEFM": MostExploredFromMain
         }
         if strategy_name in strategies:
-            return strategies[strategy_name]()
+            return strategies[strategy_name](exceptions)
         else:
             raise ValueError(f"Unknown strategy '{strategy_name}'. Available strategies: {list(strategies.keys())}")
 
