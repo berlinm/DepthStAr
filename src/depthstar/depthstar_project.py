@@ -146,7 +146,7 @@ class DepthStarProject(angr.Project):
 
     def get_function_aggressiveness(self, function_name):
         """Returns the dynamically adjusted aggressiveness level for a function."""
-        # If function does not exist, create with default value
-        if function_name not in self.function_aggressiveness:
-            self.function_aggressiveness[function_name] = self.default_aggressiveness_level
+        # Check if the function was set to a specific aggressiveness level
+        if function_name in self.function_aggressiveness:
+            return self.function_aggressiveness[function_name]
         return self.strategy.get_function_score(self.function_execution_count, function_name)
