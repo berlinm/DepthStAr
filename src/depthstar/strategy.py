@@ -1,6 +1,6 @@
 from depthstar.logger import Logger
 from abc import ABC, abstractmethod
-import math
+import math, reprlib
 
 class StrategyFactory:
     """Factory for creating function prioritization strategies based on user input."""
@@ -108,7 +108,8 @@ class MostExploredFromMain(Strategy):
             # Scale to the range [1, 5]
             relative_score = 1 + 4 * smoothing_factor
         
-        return round(relative_score)  # Round the result to 2 decimal places
+        self.logger.debug(f"Calculating score for function '{function_name}': execution data: {scores} ({function_score}), function score: {round(relative_score)}")
+        return round(relative_score)
     
     def get_strategy_name(self):
         """Returns the name of the strategy."""
