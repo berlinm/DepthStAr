@@ -82,10 +82,13 @@ class MostExploredFromMain(Strategy):
             KeyError: If the function_name is not found in the function_execution_data.
             ValueError: If the execution data for the function is invalid or incomplete.
         """
+        if function_name not in function_execution_data:
+            return 1  # Default score if the function is not found in the data
+
         # Get the execution count for the function at the given index
-        function_score = function_execution_data.get(function_name, 0)
+        function_score = function_execution_data.get(function_name)
         
-        scores = function_execution_data.values() if function_execution_data else [0]
+        scores = function_execution_data.values()
         
         
         # Get the minimum and maximum values of the scores
