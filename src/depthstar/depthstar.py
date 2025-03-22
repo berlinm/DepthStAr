@@ -91,8 +91,7 @@ class DepthStar:
 
 		argument = project.factory.cc().get_args(state=state, prototype=target_function.prototype)[argument_index]
 		self.logger.info(f'verifying call to {target_function.name} from {source_function.name}')
-		statistics = project.statistics
-		statistics.increment_verifications()
+		project.statistics.increment_verifications()
 		if target_function.name in self.replacements:
 			self.logger.debug(f'replacing {target_function} with a symbolic function')
 			simproc_to_apply = self.replacements[target_function.name]
@@ -104,8 +103,8 @@ class DepthStar:
 			project.statistics.increment_detections()
 			# Report a potential weakness
 			state.solver.simplify()
-			detection = Detection(project, state, source_function, target_function, argument, funcmap,
-								time() - statistics.last_function_start_time, time() - statistics.last_binary_start_time)
+			detection = Detection(project, state, source_function, target_function, argument, project.funcmap,
+								time() - project.statistics.last_function_start_time, time() - project.statistics.last_binary_start_time)
 			self.logger.log_detection(detection)
 			return True
 	

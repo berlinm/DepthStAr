@@ -4,7 +4,7 @@ import math
 
 class StrategyFactory:
     """Factory for creating function prioritization strategies based on user input."""
-    
+    logger = Logger()
     @staticmethod
     def bake_strategy(strategy_name, exceptions={}):
         """Creates a strategy instance based on the provided name."""
@@ -13,8 +13,10 @@ class StrategyFactory:
             "MEFM": MostExploredFromMain
         }
         if strategy_name in strategies:
+            StrategyFactory.logger.info(f"Using strategy '{strategy_name}'")
             return strategies[strategy_name](exceptions)
         else:
+            StrategyFactory.logger.critical(f"Unknown strategy '{strategy_name}'. Available strategies: {list(strategies.keys())}")
             raise ValueError(f"Unknown strategy '{strategy_name}'. Available strategies: {list(strategies.keys())}")
 
 
@@ -23,6 +25,8 @@ class Strategy(ABC):
 
     def __init__(self, exceptions={}):
         self.exceptions = exceptions
+        self.logger = Logger()
+        self.logger.info(f"Strategy '{self.get_strategy_name()}' initialized with exceptions: {exceptions}")
 
     def get_function_score(self, function_execution_data, function_name):
         """
@@ -41,6 +45,11 @@ class Strategy(ABC):
         gap between the maximum score and the second-highest score.
         """
         pass
+
+    @abstractmethod
+    def get_strategy_name(self):
+        """Returns the name of the strategy."""
+        pass
         
 
 class LeastExploredFromMain(Strategy):
@@ -52,6 +61,10 @@ class LeastExploredFromMain(Strategy):
         """
         # Placeholder implementation
         return 1  # Replace with actual logic as needed
+    
+    def get_strategy_name(self):
+        """Returns the name of the strategy."""
+        return "LEFM"
 
 class MostExploredFromMain(Strategy):
     def _get_function_score(self, function_execution_data, function_name):
@@ -95,4 +108,8 @@ class MostExploredFromMain(Strategy):
             # Scale to the range [1, 5]
             relative_score = 1 + 4 * smoothing_factor
         
-        return round(relative_score)  # Round the result to 2 decimal places    
+        return round(relative_score)  # Round the result to 2 decimal places
+    
+    def get_strategy_name(self):
+        """Returns the name of the strategy."""
+        return "MEFM"
