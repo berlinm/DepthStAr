@@ -138,9 +138,6 @@ class DepthStarProject(angr.Project):
             return
         if function_name not in self.function_execution_count:
             self.function_execution_count[function_name] = 0
-        
-        if function_name not in self.function_aggressiveness:
-            self.function_aggressiveness[function_name] = self.default_aggressiveness_level
 
         self.function_execution_count[function_name] += 1
 
