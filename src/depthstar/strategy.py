@@ -84,7 +84,7 @@ class MostExploredFromMain(Strategy):
         """
         scores = function_execution_data.values()
         # Get the execution count for the function at the given index
-        function_score = function_execution_data[function_name]
+        function_score = function_execution_data.get(function_name, 0)
         
         # Get the minimum and maximum values of the scores
         min_score = min(scores)
