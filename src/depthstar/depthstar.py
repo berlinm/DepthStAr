@@ -65,6 +65,7 @@ class DepthStar:
 			value = self.configurations['recursion_limit']
 			self.logger.debug(f'Setting recursion limit to {value}')
 			sys.setrecursionlimit(value)
+			sys.set_int_max_str_digits(INT_MAX_STR_DIGITS)
 
 
 		if 'function_on_arguments' in self.configurations:
