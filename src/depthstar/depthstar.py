@@ -102,7 +102,6 @@ class DepthStar:
 			self.logger.debug('Found something, simplifying and reporting')
 			project.statistics.increment_detections()
 			# Report a potential weakness
-			state.solver.simplify()
 			detection = Detection(project, state, source_function, target_function, argument, project.funcmap,
 								time() - project.statistics.last_function_start_time, time() - project.statistics.last_binary_start_time)
 			self.logger.log_detection(detection)
@@ -123,7 +122,6 @@ class DepthStar:
 		:param target_function: Function    The destination function of the call that was made during SE.
 		:return: bool						Return True if a verification was made (i.e. the function that was called is one of an edge case)
 		"""
-		funcmap = project.funcmap
 		for edge_case in self.edge_cases:
 			edge_cases_function_names = edge_case['function_name']
 			argument_index = edge_case['argument_index']
@@ -174,7 +172,8 @@ class DepthStar:
 		# First verify, if function was veirifed (means one of an edge case), return. Else, track.
 		did_verifications = self.verify_on_call(project, state, source_function, target_function)
 		if did_verifications:
-			return
+			# Might want to return here, but for now we track the function anyway
+			pass
 		
 		# Target function is not one of an edge case, track it.
 		project.track_function_execution(target_function_name)

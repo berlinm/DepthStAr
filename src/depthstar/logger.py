@@ -126,12 +126,6 @@ class Logger:
 
         detections_data["length"] = len(detections_data["detections"])
 
-        # Log the full detection json back to the file.
-        try:
-            with open(self.detections_json_path, "w") as f:
-                json.dump(detections_data, f, indent=4)
-        except IOError as e:
-            self.error(f"Failed to write detection logs: {e}", should_print=True)
 
         # Log a minified version of the detection - only the binary, source and checked functions.
         try:
@@ -140,6 +134,17 @@ class Logger:
         except IOError as e:
             self.error(f"Failed to write to simple detections log: {e}", should_print=True)
 
+        # Simplify the constraints and update the JSON data
+        detection.state.solver.simplify()
+
+        # Log the full detection json back to the file.
+        try:
+            with open(self.detections_json_path, "w") as f:
+                json.dump(detections_data, f, indent=4)
+        except IOError as e:
+            self.error(f"Failed to write detection logs: {e}", should_print=True)
+
+        
     def report(self, detection):
         """Logs detection details into a CSV report."""
         report_line = [
