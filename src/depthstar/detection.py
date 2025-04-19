@@ -26,12 +26,17 @@ class Detection:
         self.binary_time = binary_time
 
         self.find_trace_data()
-        self.constraints = self._extract_constraints(state)
+        self.constraints = None
+
+        self.logger = Logger()
+        self.logger.debug("Detection object created", should_print=False)
 
 
-    def _extract_constraints(self, state):
-        """Extracts path constraints from an angr state."""
-        return [str(c) for c in state.solver.constraints]  # Convert constraints to strings for logging
+    def get_constraints(self):
+        """Returns the constraints of the state, converting them to strings for logging. Assumes self.state is not None."""
+        if self.constraints is None:
+            self.constraints = [str(c) for c in self.state.solver.constraints]  # Convert constraints to strings for logging
+        return self.constraints
 
 
     def describe_address(self, address):

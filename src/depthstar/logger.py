@@ -100,7 +100,6 @@ class Logger:
             f"Project: {binary_name} | State: {detection.state}\n"
             f"Source Function: {detection.source_function.name} @ {detection.source_function.addr}\n"
             f"Target Function: {detection.target_function.name} @ {detection.target_function.addr}\n"
-            f"Trace Data: {detection.traces}\n"
         )
         self.log(log_message, level=self.LEVEL.DETECTION, should_print=True)
 
@@ -118,7 +117,7 @@ class Logger:
             detections_data = {"length": 0, "detections": {}}
 
         # Update the detection data.
-        constraints = detection.constraints
+        constraints = detection.get_constraints()
         if json_key not in detections_data["detections"]:
             detections_data["detections"][json_key] = [constraints]
         else:
