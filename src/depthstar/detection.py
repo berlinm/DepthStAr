@@ -20,12 +20,11 @@ class Detection:
         self.source_function = source_function
         self.target_function = target_function
         self.symbolic_argument = symbolic_argument
-        self.logger = Logger()
         self.funcmap = funcmap
         self.function_time = function_time
         self.binary_time = binary_time
 
-        self.find_trace_data()
+        # self.find_trace_data()
         self.constraints = None
 
         self.logger = Logger()

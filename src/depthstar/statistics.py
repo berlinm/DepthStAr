@@ -24,6 +24,7 @@ class Statistics:
             elapsed_time = time() - self.last_function_start_time
             self.detection_times.append(elapsed_time)
         self.detections_count += 1
+        self.logger.debug(f"Detection time: {self.detection_times[-1]} seconds", should_print=False)
 
     def new_binary(self):
         """Start tracking a new binary execution."""
