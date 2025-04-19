@@ -103,7 +103,7 @@ class DepthStar:
 			self.logger.debug('Found something, simplifying and reporting')
 			project.statistics.increment_detections()
 			# Report a potential weakness
-			state.solver.simplify()
+			# state.solver.simplify()
 			detection = Detection(project, state, source_function, target_function, argument, funcmap,
 								time() - statistics.last_function_start_time, time() - statistics.last_binary_start_time)
 			self.logger.log_detection(detection)
