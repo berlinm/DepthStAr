@@ -65,5 +65,6 @@ class Detection:
                 'jump_target_name': self.describe_address(jump_target),
                 'jump_kind': getattr(current_history, 'jumpkind', None),
             })
+            self.logger.debug(f"Trace entry added: {self.traces[-1]}", should_print=False)
             # pdb.set_trace()
             current_history = current_history.parent
