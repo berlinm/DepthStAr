@@ -65,5 +65,5 @@ class Detection:
                 'jump_target_name': self.describe_address(jump_target),
                 'jump_kind': getattr(current_history, 'jumpkind', None),
             })
-            pdb.set_trace()
+            # pdb.set_trace()
             current_history = current_history.parent
