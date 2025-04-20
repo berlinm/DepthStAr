@@ -23,11 +23,11 @@ class Detection:
         self.funcmap = funcmap
         self.function_time = function_time
         self.binary_time = binary_time
+        self.logger = Logger()
 
         self.find_trace_data()
         self.constraints = None
 
-        self.logger = Logger()
         self.logger.debug("Detection object created", should_print=False)
 
 
