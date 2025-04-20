@@ -1,5 +1,6 @@
 import angr
 from depthstar.logger import Logger
+import pdb
 
 
 class Detection:
@@ -64,4 +65,5 @@ class Detection:
                 'jump_target_name': self.describe_address(jump_target),
                 'jump_kind': getattr(current_history, 'jumpkind', None),
             })
+            pdb.set_trace()
             current_history = current_history.parent
