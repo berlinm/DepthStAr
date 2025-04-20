@@ -24,7 +24,7 @@ class Detection:
         self.function_time = function_time
         self.binary_time = binary_time
 
-        # self.find_trace_data()
+        self.find_trace_data()
         self.constraints = None
 
         self.logger = Logger()
@@ -49,6 +49,7 @@ class Detection:
 
     def find_trace_data(self):
         """Extracts up to 4 trace entries from the state history."""
+        self.logger.debug("Finding trace data", should_print=False)
         current_history = self.state.history
         while current_history and len(self.traces) < 4:
             jump_source = getattr(current_history, 'jump_source', None)
