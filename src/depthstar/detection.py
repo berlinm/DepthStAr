@@ -1,6 +1,8 @@
 import angr
 from depthstar.logger import Logger
 import pdb
+import threading
+
 
 
 class Detection:
@@ -41,6 +43,7 @@ class Detection:
 
     def describe_address(self, address):
         """Returns a human-readable description of an address."""
+        self.logger.debug(f"Describing address {address}", should_print=False)
         if address is None:
             return 'No description'
         try:
@@ -65,6 +68,7 @@ class Detection:
                 'jump_target_name': self.describe_address(jump_target),
                 'jump_kind': getattr(current_history, 'jumpkind', None),
             })
-            self.logger.debug(f"Trace entry added: {self.traces[-1]}", should_print=False)
+
+            self.logger.debug(f"{threading.get_native_id()}: Trace entry added: {self.traces[-1]}", should_print=False)
             # pdb.set_trace()
             current_history = current_history.parent
