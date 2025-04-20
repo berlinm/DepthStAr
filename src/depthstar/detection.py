@@ -76,4 +76,4 @@ class Detection:
             # pdb.set_trace()
             self.logger.debug("Accessing current_history.parent")
             parent = current_history.parent
-            self.logger.debug("Successfully accessed parent")
+            # self.logger.debug("Successfully accessed parent")
