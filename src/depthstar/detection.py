@@ -74,6 +74,6 @@ class Detection:
 
             self.logger.debug(f"{threading.get_native_id()}: Trace entry added: {self.traces[-1]}", should_print=False)
             # pdb.set_trace()
-            self.logger.debug("Accessing current_history.parent")
+            # self.logger.debug("Accessing current_history.parent")
             parent = current_history.parent
             # self.logger.debug("Successfully accessed parent")
