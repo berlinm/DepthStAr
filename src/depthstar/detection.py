@@ -53,14 +53,16 @@ class Detection:
 
     def find_trace_data(self):
         """Extracts up to 4 trace entries from the state history."""
-        self.logger.debug("Finding trace data", should_print=False)
+        count = 0
         current_history = self.state.history.copy()
         while current_history and len(self.traces) < 4:
+            self.logger.debug(f"Finding trace data - count = {count}", should_print=False)
+            count += 1
             jump_source = getattr(current_history, 'jump_source', None)
             jump_target = getattr(current_history, 'jump_target', None)
             if not jump_source and not jump_target:
                 break  # No useful trace information, exit early
-
+            self.logger.debug(f"traces before: {len(self.traces)}")
             self.traces.append({
                 'jump_source_address': jump_source,
                 'jump_source_name': self.describe_address(jump_source),
@@ -68,6 +70,7 @@ class Detection:
                 'jump_target_name': self.describe_address(jump_target),
                 'jump_kind': getattr(current_history, 'jumpkind', None),
             })
+            self.logger.debug(f"traces after: {len(self.traces)}")
 
             self.logger.debug(f"{threading.get_native_id()}: Trace entry added: {self.traces[-1]}", should_print=False)
             # pdb.set_trace()
