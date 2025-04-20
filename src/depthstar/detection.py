@@ -51,7 +51,7 @@ class Detection:
     def find_trace_data(self):
         """Extracts up to 4 trace entries from the state history."""
         self.logger.debug("Finding trace data", should_print=False)
-        current_history = self.state.history
+        current_history = self.state.history.copy()
         while current_history and len(self.traces) < 4:
             jump_source = getattr(current_history, 'jump_source', None)
             jump_target = getattr(current_history, 'jump_target', None)
