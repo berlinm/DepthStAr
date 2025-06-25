@@ -101,6 +101,7 @@ class Logger:
             f"Source Function: {detection.source_function.name} @ {detection.source_function.addr}\n"
             f"Target Function: {detection.target_function.name} @ {detection.target_function.addr}\n"
             f"Trace: {detection.traces}\n"
+            f"Depth: {detection.depth}\n"
         )
         self.log(log_message, level=self.LEVEL.DETECTION, should_print=True)
 

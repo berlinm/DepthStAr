@@ -34,6 +34,13 @@ class DepthStarProject(angr.Project):
         self.default_aggressiveness_level = default_aggressiveness_level
 
         self.initialize_angr_project()
+    
+    def set_current_initial_depth(self, initial_depth):
+        """
+        Sets the initial depth of the entry state from the function we are currently running.
+        """
+        self.current_initial_depth = initial_depth
+        self.logger.debug(f"Initial depth set in binary {self.binary_name} to {initial_depth}", should_print=True)
 
     def initialize_angr_project(self):
         # Identifying regions for libc, main executable, and cryptographic libraries

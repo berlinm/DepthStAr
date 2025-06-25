@@ -55,7 +55,9 @@ class Detection:
         """Extracts up to 4 trace entries from the state history."""
         count = 0
         current_history = self.state.history.copy()
-        while current_history and len(self.traces) < 4:
+        self.depth = len(self.state.callstack) - self.project.current_initial_depth
+
+        while current_history is not None:
             # self.logger.debug(f"Finding trace data - count = {count}", should_print=False)
             count += 1
             jump_source = getattr(current_history, 'jump_source', None)
@@ -75,5 +77,5 @@ class Detection:
             # self.logger.debug(f"{threading.get_native_id()}: Trace entry added: {self.traces[-1]}", should_print=False)
             # pdb.set_trace()
             # self.logger.debug("Accessing current_history.parent")
-            parent = current_history.parent
+            current_history = current_history.parent
             # self.logger.debug("Successfully accessed parent")

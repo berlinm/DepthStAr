@@ -59,6 +59,11 @@ class DepthStar:
 		self.logger = Logger(out_directory, debug_z3)
 		self.cl = ConfigurationLoader.get_configuration_loader(configuration_path)
 		self.edge_cases, self.configurations = self.cl.edge_cases, self.cl.configuration
+		self.dfs = args.dfs
+		if self.dfs:
+			self.logger.info('Running in DFS mode', should_print=True)
+		else:
+			self.logger.info('Running in BFS mode', should_print=True)
 
 		# Apply configurations
 		if 'recursion_limit' in self.configurations:
@@ -247,10 +252,14 @@ class DepthStar:
 		ed = ExplosionDetector(aggressiveness_level=aggressiveness_level)
 
 		sm.use_technique(ed)
+		# If DFS was selected
+		if self.dfs:
+			sm.use_technique(angr.exploration_techniques.DFS())
 		statistics.set_last_function_start()
 
 		try:
 			# Start exploring
+			project.set_current_initial_depth(len(initial_state.callstack))
 			sm.explore()
 		except StepTimeoutException:
 			# Clean up force stopped simgr
@@ -382,12 +391,21 @@ class DepthStar:
 				for function_name in project.whitelist:
 					self.concrete_execute_function(project, function_name)
 
+				# If main exists, start with it
+				if 'main' in project.name_funcmap:
+					main_function = project.name_funcmap['main'][0]
+					self.logger.info(f'Next execution function: {main_function.name}', should_print=True)
+					self.detect_from_function(project, main_function, extra_execution_args)
+
 				for function_name, functions in tqdm(project.name_funcmap.items()):
 					should_skip = self.should_skip(project, function_name, main_object_region)
 					if should_skip:
 						continue
 
 					for function in functions:
+						# Skip main as we already executed it
+						if function.name == 'main':
+							continue
 						self.logger.info(f'Next execution function: {function.name}', should_print=True)
 						self.detect_from_function(project, function, extra_execution_args)
 
@@ -415,6 +433,9 @@ def main():
 	
 	# Debug Z3
 	parser.add_argument("-z", "--debug_z3", action='store_true', help="Use this flag to create another log file that will contain reproducable information about Z3. Mainly should used for debugging purposes if depthstar crashed.")
+
+	# DFS
+	parser.add_argument("-df", "--dfs", action='store_true', help="Use this flag to make depthstar be DFS-oriented")
 
 	
 	args = parser.parse_args()

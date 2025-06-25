@@ -20,7 +20,7 @@ class ConfigurationLoader:
 				# Parse targets.json configuration file
 				self.projects = load(target_binaries_file)
 				self.parse_target_binaries()
-				self.logger.log(f'Loaded target binaries: {self.projects}', self.__class__)
+				# self.logger.log(f'Loaded target binaries: {self.projects}', self.__class__)
 
 			with open(os.path.join(configuration_directory, "config.json"), "r") as configuration_file:
 				self.configuration = load(configuration_file)
@@ -30,7 +30,7 @@ class ConfigurationLoader:
 				self.logger.log(f'Configuration directory does not exists: {configuration_directory}')
 				return None
 			
-			self.logger.log(f'Loaded binaries: {self.projects}', self.__class__)
+			# self.logger.log(f'Loaded binaries: {self.projects}', self.__class__)
 
 			# Load aggressiveness settings
 			self.base_aggressiveness = self.configuration.get("base_aggressiveness_level_values")
