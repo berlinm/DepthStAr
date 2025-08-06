@@ -66,14 +66,14 @@ class ConfigurationLoader:
 
 		def replace_to_simprocs(self, project):
 			for target_function in self.configuration['function_on_arguments']:
-				function_to_apply_on_args = self.config['function_on_arguments'][target_function]
+				function_to_apply_on_args = self.configuration['function_on_arguments'][target_function]
 				simproc_map = {sp.display_name: sp for sp in project._sim_procedures.values()}
 				if function_to_apply_on_args not in simproc_map:
 					# This should not happen
 					self.logger.log(f'{function_to_apply_on_args} is not found as a simProcedure')
 					continue
 				function_to_apply_on_args = simproc_map[function_to_apply_on_args]
-				self.config['function_on_arguments'][target_function] = function_to_apply_on_args
+				self.configuration['function_on_arguments'][target_function] = function_to_apply_on_args
 
 	instance = None
 
